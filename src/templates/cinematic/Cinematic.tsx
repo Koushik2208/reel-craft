@@ -1,0 +1,114 @@
+import React, { useEffect, useState } from "react";
+import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { Video } from "@remotion/media";
+import { WordReveal } from "../shared/WordReveal";
+import { getFontsForLanguage } from "../shared/language";
+import type { VideoProps } from "../schema";
+import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
+import { getContrastAdjustment, applyOpacityMultiplier } from "../shared/autoContrast";
+
+type Look = { overlay: string; text: string };
+
+const LOOKS: Record<string, Look> = {
+  noir:    { overlay: "rgba(8,8,10,0.62)",   text: "#FFFFFF"  },
+  ember:   { overlay: "rgba(28,12,4,0.58)",  text: "#FFEFE0"  },
+  cool:    { overlay: "rgba(6,12,26,0.60)",  text: "#EAF1FF"  },
+  dusk:    { overlay: "rgba(40,10,30,0.62)", text: "#FFD6F0"  },
+  arctic:  { overlay: "rgba(4,18,32,0.65)",  text: "#C8E8FF"  },
+  sepia:   { overlay: "rgba(30,18,4,0.60)",  text: "#FFE8C0"  },
+  verdant: { overlay: "rgba(4,20,10,0.62)",  text: "#C0FFD4"  },
+};
+
+export const cinematicVariants = [
+  { id: "noir",    label: "Noir",    colors: { bg: "#08080A", text: "#FFFFFF"  } },
+  { id: "ember",   label: "Ember",   colors: { bg: "#1C0C04", text: "#FFEFE0"  } },
+  { id: "cool",    label: "Cool",    colors: { bg: "#060C1A", text: "#EAF1FF"  } },
+  { id: "dusk",    label: "Dusk",    colors: { bg: "#280A1E", text: "#FFD6F0"  } },
+  { id: "arctic",  label: "Arctic",  colors: { bg: "#041220", text: "#C8E8FF"  } },
+  { id: "sepia",   label: "Sepia",   colors: { bg: "#1E1204", text: "#FFE8C0"  } },
+  { id: "verdant", label: "Verdant", colors: { bg: "#04140A", text: "#C0FFD4"  } },
+  { id: "none",    label: "None",    colors: { bg: "#111114", text: "#FFFFFF"  } },
+];
+
+export const Cinematic: React.FC<VideoProps> = ({
+  text,
+  backgroundSrc,
+  variant,
+  language = "en",
+  layerMode = "full",
+  textColorOverride = null,
+}) => {
+  const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+  const isNone = variant === "none";
+  const look = LOOKS[variant] ?? LOOKS.noir;
+  const fonts = getFontsForLanguage(language);
+
+  const [brightness, setBrightness] = useState(0.4);
+  useEffect(() => {
+    if (!backgroundSrc) { setBrightness(0.4); return; }
+    sampleBackgroundBrightness(backgroundSrc).then(setBrightness);
+  }, [backgroundSrc]);
+
+  const adjustment = backgroundSrc ? getContrastAdjustment(brightness) : { textColor: look.text, overlayOpacity: 1.0 };
+  const textColor = textColorOverride ?? adjustment.textColor;
+  const overlayColor = backgroundSrc ? applyOpacityMultiplier(look.overlay, adjustment.overlayOpacity) : look.overlay;
+  const lineHeight = language === "te" ? 1.2 : 1.1;
+
+  // Slow Ken-Burns zoom across the whole clip.
+  const zoom = interpolate(frame, [0, durationInFrames], [1.08, 1.2]);
+  const fadeOut = interpolate(
+    frame,
+    [durationInFrames - 18, durationInFrames - 2],
+    [1, 0],
+    { extrapolateLeft: "clamp" }
+  );
+
+  const showBackground = layerMode !== "text-only";
+  const showText = layerMode !== "background-only";
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: showBackground ? "#000" : "transparent" }}>
+      {showBackground && (
+        <>
+          {backgroundSrc ? (
+            <AbsoluteFill style={{ transform: `scale(${zoom})` }}>
+              <Video
+                src={backgroundSrc}
+                muted
+                loop
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </AbsoluteFill>
+          ) : (
+            <AbsoluteFill
+              style={{
+                transform: `scale(${zoom})`,
+                background: "radial-gradient(120% 120% at 50% 20%, #2a2a3a 0%, #0b0b10 70%)",
+              }}
+            />
+          )}
+
+          {!isNone && <AbsoluteFill style={{ backgroundColor: overlayColor }} />}
+        </>
+      )}
+
+      {showText && (
+        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fadeOut }}>
+          <WordReveal
+            text={text}
+            color={textColor}
+            fontFamily={fonts.display}
+            fontSize={88}
+            fontWeight={600}
+            lineHeight={lineHeight}
+            letterSpacing="-0.01em"
+            startAt={10}
+            spread={Math.max(24, durationInFrames - 60)}
+            shadow
+          />
+        </AbsoluteFill>
+      )}
+    </AbsoluteFill>
+  );
+};
