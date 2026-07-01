@@ -10,15 +10,17 @@ import { FPS, WIDTH, HEIGHT } from "../templates/shared/timing";
 // scene itself plus whatever cinematic finishes are turned on, so a
 // single-scene export looks like the equivalent slice of the full render.
 function sceneWithFinishes(finishes: CinematicFinishes): React.FC<CompositionProps> {
-  return (props) =>
-    React.createElement(
-      React.Fragment,
-      null,
-      React.createElement(VideoComposition, props),
-      finishes.vignette ? React.createElement(VignetteOverlay) : null,
-      finishes.grain ? React.createElement(GrainOverlay) : null,
-      finishes.letterbox ? React.createElement(LetterboxOverlay) : null
+  return (props) => {
+    // Grain/vignette/letterbox would dirty the green and make keying harder.
+    const skipFinishes = props.layerMode === "greenscreen";
+    return React.createElement(
+      VideoComposition,
+      props,
+      !skipFinishes && finishes.vignette ? React.createElement(VignetteOverlay) : null,
+      !skipFinishes && finishes.grain ? React.createElement(GrainOverlay) : null,
+      !skipFinishes && finishes.letterbox ? React.createElement(LetterboxOverlay) : null
     );
+  };
 }
 
 export function renderSceneToFile(
@@ -37,6 +39,7 @@ export function renderSceneToFile(
     language: scene.language,
     layerMode: scene.layerMode,
     textColorOverride: scene.textColorOverride ?? null,
+    frameId: scene.frameId ?? "none",
   };
 
   const promise = (async () => {

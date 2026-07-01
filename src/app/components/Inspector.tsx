@@ -27,9 +27,9 @@ import { LANGUAGES } from "../../templates/shared/language";
 import { renderSceneToFile } from "../renderScene";
 import { downloadBlob, getExportFormat } from "../render";
 
-const LAYER_MODE_OPTIONS: { id: LayerMode; label: string; hint?: string }[] = [
+const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "full", label: "Full" },
-  { id: "text-only", label: "Text only", hint: "→ WebM" },
+  { id: "greenscreen", label: "Green Screen" },
   { id: "background-only", label: "Background only" },
 ];
 
@@ -62,7 +62,6 @@ export const Inspector: React.FC = () => {
   const {
     scenes,
     activeSceneId,
-    syncStyle,
     audio,
     finishes,
     addScene,
@@ -81,7 +80,6 @@ export const Inspector: React.FC = () => {
     setLayerMode,
     setTextColorOverride,
     applyAutoSplit,
-    setSyncStyle,
     applyStyleToAllScenes,
     setAudio,
     setAudioTrim,
@@ -155,41 +153,12 @@ export const Inspector: React.FC = () => {
   return (
     <div className="flex flex-col gap-7">
       {/* ── Scene list ── */}
-      <Section
-        title="Scenes"
-        hint={syncStyle ? "Syncing style from selected scene" : undefined}
-      >
-        {/* Sync lock toggle */}
-        <div className="flex items-start gap-3 rounded-2xl border border-rim bg-surface/60 px-3.5 py-3 shadow-rim">
-          <div className="flex-1">
-            <p className="text-[13px] text-zinc-200">Keep scenes in sync</p>
-            <p className="mt-0.5 text-[11px] leading-snug text-muted/70">
-              While on, the selected scene's template, look, and background apply to all
-              scenes. Text stays per scene.
-            </p>
-          </div>
-          <button
-            onClick={() => setSyncStyle(!syncStyle)}
-            aria-pressed={syncStyle}
-            title={syncStyle ? "Disable style sync" : "Enable style sync"}
-            className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-              syncStyle ? "bg-accent-purple" : "bg-rim"
-            }`}
-          >
-            <span
-              className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
-                syncStyle ? "translate-x-[19px]" : "translate-x-[3px]"
-              }`}
-            />
-          </button>
-        </div>
-
+      <Section title="Scenes">
         <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0 lg:snap-none">
           {scenes.map((scene, idx) => {
             const isActive = scene.id === activeSceneId;
             const preview = scene.text.trim().split("\n")[0]?.slice(0, 42) || "—";
             const dur = (sceneDurationInFrames(scene) / FPS).toFixed(1);
-            const isTextOnly = (scene.layerMode ?? "full") === "text-only";
             const exportProgress = sceneExportProgress[scene.id];
             const isExporting = exportProgress !== undefined;
             return (
@@ -212,12 +181,8 @@ export const Inspector: React.FC = () => {
                       Scene {idx + 1}
                     </span>
                     <span className="text-[10px] text-muted/50">{dur}s</span>
-                    <span
-                      className={`rounded px-1 py-px text-[9px] font-semibold uppercase tracking-wide ${
-                        isTextOnly ? "bg-accent-purple/15 text-accent-purple" : "bg-rim/60 text-muted/70"
-                      }`}
-                    >
-                      {isTextOnly ? "WebM" : "MP4"}
+                    <span className="rounded bg-rim/60 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-muted/70">
+                      MP4
                     </span>
                   </div>
                   <p className="truncate text-[12px] leading-snug text-zinc-300">{preview}</p>
@@ -543,18 +508,13 @@ export const Inspector: React.FC = () => {
                 }`}
               >
                 <div className="text-[12px] font-medium leading-snug">{opt.label}</div>
-                {opt.hint && (
-                  <div className={`mt-0.5 text-[10px] ${active ? "text-accent-purple" : "text-muted/60"}`}>
-                    {opt.hint}
-                  </div>
-                )}
               </button>
             );
           })}
         </div>
-        {activeScene.layerMode === "text-only" && (
+        {activeScene.layerMode === "greenscreen" && (
           <p className="text-[11px] leading-snug text-muted/70">
-            Exports as WebM with alpha channel. Drop into any editor over your own background.
+            Text on #00FF00 background. Key it out in CapCut, DaVinci, or any editor.
           </p>
         )}
         {activeScene.layerMode === "background-only" && !activeScene.asset && (
@@ -687,23 +647,28 @@ export const Inspector: React.FC = () => {
       </Section>
 
       {/* ── One-shot style copy ── */}
-      <button
-        onClick={handleApplyStyle}
-        disabled={scenes.length <= 1}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {styleApplied ? (
-          <>
-            <Check size={14} className="text-accent-purple" />
-            <span className="text-accent-purple">Applied</span>
-          </>
-        ) : (
-          <>
-            <Paintbrush size={14} />
-            Apply style to all scenes
-          </>
-        )}
-      </button>
+      <div className="space-y-1.5">
+        <button
+          onClick={handleApplyStyle}
+          disabled={scenes.length <= 1}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {styleApplied ? (
+            <>
+              <Check size={14} className="text-accent-purple" />
+              <span className="text-accent-purple">Applied</span>
+            </>
+          ) : (
+            <>
+              <Paintbrush size={14} />
+              Apply style to all scenes
+            </>
+          )}
+        </button>
+        <p className="text-center text-[11px] leading-snug text-muted/70">
+          Copies this scene's template, look, background, and layer mode to every other scene.
+        </p>
+      </div>
     </div>
   );
 };

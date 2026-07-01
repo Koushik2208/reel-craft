@@ -19,6 +19,7 @@
     "lucide-react": "^0.439.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.1",
     "remotion": "^4.0.447",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"
@@ -27,6 +28,7 @@
     "@remotion/cli": "^4.0.447",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "canvas": "^3.2.3",

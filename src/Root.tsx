@@ -4,6 +4,7 @@ import { SceneSeries, totalDurationInFrames } from "./app/components/SceneSeries
 import { TEMPLATES } from "./templates/registry";
 import { FPS, WIDTH, HEIGHT } from "./templates/shared/timing";
 import type { Scene } from "./app/store";
+import { GreenScreenScene } from "./frames/GreenScreenScene";
 
 // Default scenes for CLI / Studio. Override via --props or calculateMetadata.
 const defaultScenes: Scene[] = [
@@ -17,6 +18,7 @@ const defaultScenes: Scene[] = [
     language: "en",
     layerMode: "full",
     textColorOverride: null,
+    frameId: "none",
   },
   {
     id: "scene-2",
@@ -28,6 +30,7 @@ const defaultScenes: Scene[] = [
     language: "en",
     layerMode: "full",
     textColorOverride: null,
+    frameId: "none",
   },
 ];
 
@@ -36,17 +39,28 @@ const defaultScenes: Scene[] = [
 //   npx remotion render src/remotion.ts video out.mp4 --props='{"scenes":[...]}'
 export const RemotionRoot: React.FC = () => {
   return (
-    <Composition
-      id="video"
-      component={SceneSeries}
-      fps={FPS}
-      width={WIDTH}
-      height={HEIGHT}
-      durationInFrames={totalDurationInFrames(defaultScenes)}
-      defaultProps={{ scenes: defaultScenes, audio: null, finishes: { grain: false, vignette: false, letterbox: false } }}
-      calculateMetadata={({ props }) => ({
-        durationInFrames: totalDurationInFrames(props.scenes),
-      })}
-    />
+    <>
+      <Composition
+        id="video"
+        component={SceneSeries}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        durationInFrames={totalDurationInFrames(defaultScenes)}
+        defaultProps={{ scenes: defaultScenes, audio: null, finishes: { grain: false, vignette: false, letterbox: false } }}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: totalDurationInFrames(props.scenes),
+        })}
+      />
+      <Composition
+        id="green-screen-frame"
+        component={GreenScreenScene}
+        fps={FPS}
+        width={WIDTH}
+        height={HEIGHT}
+        durationInFrames={1}
+        defaultProps={{ frameId: "minimal-bezel" }}
+      />
+    </>
   );
 };

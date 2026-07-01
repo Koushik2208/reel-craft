@@ -5,6 +5,7 @@ import type { Language } from "../templates/shared/language";
 import { TEMPLATES } from "../templates/registry";
 import { durationInFramesFor, FPS } from "../templates/shared/timing";
 import { splitTextIntoScenes } from "../templates/shared/textSplit";
+import type { FrameId } from "../frames/types";
 
 export type Asset = { src: string; kind: "image" | "video"; name: string } | null;
 
@@ -39,6 +40,7 @@ export type Scene = {
   language: Language;
   layerMode: LayerMode;
   textColorOverride: string | null;
+  frameId: FrameId;
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -62,6 +64,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     language: "en",
     layerMode: "full",
     textColorOverride: null,
+    frameId: "none",
     ...overrides,
   };
 }
@@ -73,7 +76,6 @@ const DEFAULT_SCENE = makeScene({
 type State = {
   scenes: Scene[];
   activeSceneId: string;
-  syncStyle: boolean;
   audio: ProjectAudio;
   finishes: CinematicFinishes;
   addScene: () => void;
@@ -91,9 +93,10 @@ type State = {
   setManualDuration: (frames: number) => void;
   setLayerMode: (mode: LayerMode) => void;
   setTextColorOverride: (color: string | null) => void;
+  setFrame: (id: FrameId) => void;
   applyAutoSplit: (sceneId: string) => void;
-  setSyncStyle: (on: boolean) => void;
   applyStyleToAllScenes: (sourceId: string) => void;
+  applyFrameToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
   setAudioFadeIn: (seconds: number) => void;
@@ -111,34 +114,19 @@ export const useStore = create<State>()(
     (set, get) => ({
       scenes: [DEFAULT_SCENE],
       activeSceneId: DEFAULT_SCENE.id,
-      syncStyle: false,
       audio: null,
       finishes: { grain: false, vignette: false, letterbox: false },
 
       addScene: () => {
-        const { activeSceneId, scenes, syncStyle } = get();
-        const active = scenes.find((s) => s.id === activeSceneId);
-        const styleOverride =
-          syncStyle && active
-            ? { template: active.template, variant: active.variant, asset: active.asset, language: active.language }
-            : {};
-        const scene = makeScene({ text: "Type your next scene here.", ...styleOverride });
+        const scene = makeScene({ text: "Type your next scene here." });
         set((s) => ({ scenes: [...s.scenes, scene], activeSceneId: scene.id }));
       },
 
       duplicateScene: (id) => {
-        const { scenes, activeSceneId, syncStyle } = get();
+        const { scenes } = get();
         const idx = scenes.findIndex((s) => s.id === id);
         if (idx < 0) return;
-        const active = scenes.find((s) => s.id === activeSceneId);
-        const copy: Scene = {
-          ...scenes[idx],
-          id: crypto.randomUUID(),
-          asset: null,
-          ...(syncStyle && active
-            ? { template: active.template, variant: active.variant, asset: active.asset, language: active.language }
-            : {}),
-        };
+        const copy: Scene = { ...scenes[idx], id: crypto.randomUUID(), asset: null };
         const next = [...scenes];
         next.splice(idx + 1, 0, copy);
         set({ scenes: next, activeSceneId: copy.id });
@@ -176,47 +164,27 @@ export const useStore = create<State>()(
       setTemplate: (template) =>
         set((s) => {
           const style = { template, variant: TEMPLATES[template].defaultVariant };
-          return {
-            scenes: s.scenes.map((sc) =>
-              s.syncStyle || sc.id === s.activeSceneId ? { ...sc, ...style } : sc
-            ),
-          };
+          return { scenes: patchActive(s.scenes, s.activeSceneId, style) };
         }),
 
       setVariant: (variant) =>
-        set((s) => ({
-          scenes: s.scenes.map((sc) =>
-            s.syncStyle || sc.id === s.activeSceneId ? { ...sc, variant } : sc
-          ),
-        })),
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { variant }) })),
 
       setLanguage: (language) =>
-        set((s) => ({
-          scenes: s.scenes.map((sc) =>
-            s.syncStyle || sc.id === s.activeSceneId ? { ...sc, language } : sc
-          ),
-        })),
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { language }) })),
 
       setAsset: (asset) =>
         set((s) => {
           const prev = s.scenes.find((sc) => sc.id === s.activeSceneId)?.asset;
           if (prev) URL.revokeObjectURL(prev.src);
-          return {
-            scenes: s.scenes.map((sc) =>
-              s.syncStyle || sc.id === s.activeSceneId ? { ...sc, asset } : sc
-            ),
-          };
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { asset }) };
         }),
 
       clearAsset: () =>
         set((s) => {
           const prev = s.scenes.find((sc) => sc.id === s.activeSceneId)?.asset;
           if (prev) URL.revokeObjectURL(prev.src);
-          return {
-            scenes: s.scenes.map((sc) =>
-              s.syncStyle || sc.id === s.activeSceneId ? { ...sc, asset: null } : sc
-            ),
-          };
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { asset: null }) };
         }),
 
       setDurationMode: (durationMode) =>
@@ -232,6 +200,9 @@ export const useStore = create<State>()(
 
       setTextColorOverride: (textColorOverride) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { textColorOverride }) })),
+
+      setFrame: (frameId) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { frameId }) })),
 
       applyAutoSplit: (sceneId) => {
         const { scenes } = get();
@@ -253,8 +224,6 @@ export const useStore = create<State>()(
         next.splice(idx, 1, ...newScenes);
         set({ scenes: next, activeSceneId: newScenes[0].id });
       },
-
-      setSyncStyle: (syncStyle) => set({ syncStyle }),
 
       setAudio: async (file) => {
         const prev = get().audio;
@@ -304,8 +273,22 @@ export const useStore = create<State>()(
         const { scenes } = get();
         const source = scenes.find((s) => s.id === sourceId);
         if (!source) return;
-        const style = { template: source.template, variant: source.variant, asset: source.asset, language: source.language };
+        const style = {
+          template: source.template,
+          variant: source.variant,
+          asset: source.asset,
+          layerMode: source.layerMode,
+        };
         set({ scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, ...style })) });
+      },
+
+      applyFrameToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, frameId: source.frameId })),
+        });
       },
     }),
     {
@@ -314,7 +297,6 @@ export const useStore = create<State>()(
       partialize: (s) => ({
         scenes: s.scenes.map(({ asset: _asset, ...rest }) => ({ ...rest, asset: null })),
         activeSceneId: s.activeSceneId,
-        syncStyle: s.syncStyle,
         audio: s.audio ? { ...s.audio, src: null } : null,
         finishes: s.finishes,
       }),

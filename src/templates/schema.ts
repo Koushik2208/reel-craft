@@ -3,7 +3,7 @@ import { z } from "zod";
 export const TEMPLATE_IDS = ["minimal", "cinematic", "imageCard"] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
-export const LAYER_MODES = ["full", "text-only", "background-only"] as const;
+export const LAYER_MODES = ["full", "greenscreen", "background-only"] as const;
 export type LayerMode = (typeof LAYER_MODES)[number];
 
 // The single object every template is a pure function of.

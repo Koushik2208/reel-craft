@@ -38,12 +38,9 @@ choices are remembered between sessions. The 9:16 output is 1080×1920.
 Each scene can be rendered in one of three modes:
 
 - **Full** (default) — background + text, exported as MP4/H.264.
-- **Text Only** — transparent background, exported as **WebM/VP9** (alpha channel). Use this to
-  composite the text over your own footage.
+- **Green Screen** — text over a solid `#00FF00` background, exported as MP4/H.264. Key it out
+  in CapCut, DaVinci, or any editor to composite the text over your own footage.
 - **Background Only** — background without any text overlay, exported as MP4.
-
-> **Note:** Exporting a mix of Text-Only and non-transparent scenes in one go will fall back to
-> MP4 for the full stitch. Export the transparent scenes individually to get WebM files.
 
 ## Cinematic finishes
 

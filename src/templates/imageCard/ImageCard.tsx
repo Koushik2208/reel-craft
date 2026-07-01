@@ -34,31 +34,31 @@ export const ImageCard: React.FC<VideoProps> = ({
 
   const LOOKS: Record<string, Look> = {
     frost: {
-      text: "#FFFFFF",  font: fonts.primary, size: 76,  weight: 600, upper: false,
+      text: "#FFFFFF",  font: fonts.primary, size: 52,  weight: 600, upper: false,
       scrim: "linear-gradient(to top, rgba(6,6,9,0.92) 6%, rgba(6,6,9,0.35) 42%, rgba(6,6,9,0) 70%)",
     },
     warm: {
-      text: "#FFF3E6",  font: fonts.primary, size: 76,  weight: 600, upper: false,
+      text: "#FFF3E6",  font: fonts.primary, size: 52,  weight: 600, upper: false,
       scrim: "linear-gradient(to top, rgba(24,10,2,0.92) 6%, rgba(24,10,2,0.35) 42%, rgba(24,10,2,0) 70%)",
     },
     bold: {
-      text: "#FFFFFF",  font: fonts.bold,    size: 132, weight: 400, upper: true,
+      text: "#FFFFFF",  font: fonts.bold,    size: 88,  weight: 400, upper: true,
       scrim: "linear-gradient(to top, rgba(0,0,0,0.94) 8%, rgba(0,0,0,0.45) 46%, rgba(0,0,0,0) 72%)",
     },
     midnight: {
-      text: "#E8E0FF",  font: fonts.display, size: 76,  weight: 500, upper: false,
+      text: "#E8E0FF",  font: fonts.display, size: 52,  weight: 500, upper: false,
       scrim: "linear-gradient(to top, rgba(8,4,24,0.94) 6%, rgba(8,4,24,0.40) 44%, rgba(8,4,24,0) 72%)",
     },
     ember: {
-      text: "#FFE4C0",  font: fonts.primary, size: 76,  weight: 600, upper: false,
+      text: "#FFE4C0",  font: fonts.primary, size: 52,  weight: 600, upper: false,
       scrim: "linear-gradient(to top, rgba(28,8,0,0.94) 6%, rgba(28,8,0,0.40) 44%, rgba(28,8,0,0) 72%)",
     },
     steel: {
-      text: "#E0EEFF",  font: fonts.primary, size: 76,  weight: 600, upper: false,
+      text: "#E0EEFF",  font: fonts.primary, size: 52,  weight: 600, upper: false,
       scrim: "linear-gradient(to top, rgba(4,12,24,0.94) 6%, rgba(4,12,24,0.40) 44%, rgba(4,12,24,0) 72%)",
     },
     verdant: {
-      text: "#C8FFD8",  font: fonts.primary, size: 76,  weight: 600, upper: false,
+      text: "#C8FFD8",  font: fonts.primary, size: 52,  weight: 600, upper: false,
       scrim: "linear-gradient(to top, rgba(2,16,8,0.94) 6%, rgba(2,16,8,0.40) 44%, rgba(2,16,8,0) 72%)",
     },
   };
@@ -89,12 +89,12 @@ export const ImageCard: React.FC<VideoProps> = ({
     ? (language === "te" ? 1.08 : 0.98)
     : (language === "te" ? 1.24 : 1.14);
 
-  const showBackground = layerMode !== "text-only";
+  const isGreenscreen = layerMode === "greenscreen";
   const showText = layerMode !== "background-only";
 
   return (
-    <AbsoluteFill style={{ backgroundColor: showBackground ? "#0b0b10" : "transparent" }}>
-      {showBackground && (
+    <AbsoluteFill style={{ backgroundColor: isGreenscreen ? "#00FF00" : "#0b0b10" }}>
+      {!isGreenscreen && (
         <>
           <AbsoluteFill style={{ transform: `scale(${scale}) translateX(${pan}px)` }}>
             {backgroundSrc ? (

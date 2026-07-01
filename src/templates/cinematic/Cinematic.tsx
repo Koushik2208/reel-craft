@@ -64,12 +64,12 @@ export const Cinematic: React.FC<VideoProps> = ({
     { extrapolateLeft: "clamp" }
   );
 
-  const showBackground = layerMode !== "text-only";
+  const isGreenscreen = layerMode === "greenscreen";
   const showText = layerMode !== "background-only";
 
   return (
-    <AbsoluteFill style={{ backgroundColor: showBackground ? "#000" : "transparent" }}>
-      {showBackground && (
+    <AbsoluteFill style={{ backgroundColor: isGreenscreen ? "#00FF00" : "#000" }}>
+      {!isGreenscreen && (
         <>
           {backgroundSrc ? (
             <AbsoluteFill style={{ transform: `scale(${zoom})` }}>
@@ -99,7 +99,7 @@ export const Cinematic: React.FC<VideoProps> = ({
             text={text}
             color={textColor}
             fontFamily={fonts.display}
-            fontSize={88}
+            fontSize={56}
             fontWeight={600}
             lineHeight={lineHeight}
             letterSpacing="-0.01em"

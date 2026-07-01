@@ -14,13 +14,10 @@ export type ExportFormat = {
   transparent: boolean;
 };
 
-// Transparent export only works with WebM/VP9 in-browser — MP4/H.264 has no
-// alpha support in WebCodecs. "text-only" scenes need the alpha channel;
-// everything else keeps the current MP4 pipeline.
-export function getExportFormat(layerMode: LayerMode): ExportFormat {
-  if (layerMode === "text-only") {
-    return { container: "webm", videoCodec: "vp9", transparent: true };
-  }
+// "greenscreen" scenes are text over a solid #00FF00 background — just a
+// color, not transparency — so every layer mode exports the same MP4/H.264
+// pipeline.
+export function getExportFormat(_layerMode: LayerMode): ExportFormat {
   return { container: "mp4", videoCodec: "h264", transparent: false };
 }
 

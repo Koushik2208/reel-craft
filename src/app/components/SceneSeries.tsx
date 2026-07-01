@@ -19,19 +19,28 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
   return (
     <>
       <Series>
-        {scenes.map((scene) => (
-          <Series.Sequence key={scene.id} durationInFrames={sceneDurationInFrames(scene)}>
-            <VideoComposition
-              text={scene.text}
-              template={scene.template}
-              variant={scene.variant}
-              backgroundSrc={scene.asset?.src ?? null}
-              language={scene.language ?? "en"}
-              layerMode={scene.layerMode ?? "full"}
-              textColorOverride={scene.textColorOverride ?? null}
-            />
-          </Series.Sequence>
-        ))}
+        {scenes.map((scene) => {
+          // Grain/vignette/letterbox would dirty the green and make keying harder.
+          const skipFinishes = (scene.layerMode ?? "full") === "greenscreen";
+          return (
+            <Series.Sequence key={scene.id} durationInFrames={sceneDurationInFrames(scene)}>
+              <VideoComposition
+                text={scene.text}
+                template={scene.template}
+                variant={scene.variant}
+                backgroundSrc={scene.asset?.src ?? null}
+                language={scene.language ?? "en"}
+                layerMode={scene.layerMode ?? "full"}
+                textColorOverride={scene.textColorOverride ?? null}
+                frameId={scene.frameId ?? "none"}
+              >
+                {!skipFinishes && finishes?.vignette && <VignetteOverlay />}
+                {!skipFinishes && finishes?.grain && <GrainOverlay />}
+                {!skipFinishes && finishes?.letterbox && <LetterboxOverlay />}
+              </VideoComposition>
+            </Series.Sequence>
+          );
+        })}
       </Series>
       {audio?.src && (
         <Audio
@@ -42,9 +51,6 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
           }
         />
       )}
-      {finishes?.vignette && <VignetteOverlay />}
-      {finishes?.grain && <GrainOverlay />}
-      {finishes?.letterbox && <LetterboxOverlay />}
     </>
   );
 };

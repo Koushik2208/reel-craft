@@ -61,7 +61,7 @@ export const Minimal: React.FC<VideoProps> = ({
   return (
     <AbsoluteFill
       style={{
-        backgroundColor: layerMode === "text-only" ? "transparent" : look.bg,
+        backgroundColor: layerMode === "greenscreen" ? "#00FF00" : look.bg,
         justifyContent: "center",
         alignItems: "center",
       }}
@@ -75,7 +75,7 @@ export const Minimal: React.FC<VideoProps> = ({
           color: textColorOverride ?? look.text,
           fontFamily: look.font,
           fontWeight: look.weight,
-          fontSize: 78,
+          fontSize: 52,
           lineHeight,
           letterSpacing: look.tracking,
         }}

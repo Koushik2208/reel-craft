@@ -1,4 +1,4 @@
-export const MAX_CHARS_PER_SCENE = 120;
+export const MAX_CHARS_PER_SCENE = 60;
 
 export function splitTextIntoScenes(
   text: string,
