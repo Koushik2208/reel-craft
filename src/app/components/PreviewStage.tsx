@@ -1,13 +1,39 @@
 import React, { useMemo } from "react";
 import { Player } from "@remotion/player";
-import { useStore } from "../store";
+import { useStore, sceneDurationInFrames } from "../store";
+import { usePreviewMode } from "../PreviewContext";
 import { SceneSeries, totalDurationInFrames } from "./SceneSeries";
+import { VideoComposition } from "./VideoComposition";
 import { FPS, WIDTH, HEIGHT } from "../../templates/shared/timing";
 
 export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea }) => {
-  const { scenes, audio, finishes } = useStore();
-  const durationInFrames = useMemo(() => Math.max(totalDurationInFrames(scenes), 1), [scenes]);
-  const inputProps = useMemo(() => ({ scenes, audio, finishes }), [scenes, audio, finishes]);
+  const { scenes, audio, finishes, activeSceneId } = useStore();
+  const previewMode = usePreviewMode();
+  const isSceneMode = previewMode === "scene";
+  const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
+  const activeIndex = scenes.findIndex((s) => s.id === activeScene.id);
+
+  const fullDurationInFrames = useMemo(() => Math.max(totalDurationInFrames(scenes), 1), [scenes]);
+  const sceneDurInFrames = useMemo(
+    () => Math.max(sceneDurationInFrames(activeScene), 1),
+    [activeScene]
+  );
+  const durationInFrames = isSceneMode ? sceneDurInFrames : fullDurationInFrames;
+
+  const fullInputProps = useMemo(() => ({ scenes, audio, finishes }), [scenes, audio, finishes]);
+  const sceneInputProps = useMemo(
+    () => ({
+      text: activeScene.text,
+      template: activeScene.template,
+      variant: activeScene.variant,
+      backgroundSrc: activeScene.asset?.src ?? null,
+      language: activeScene.language ?? "en",
+      layerMode: activeScene.layerMode ?? "full",
+      textColorOverride: activeScene.textColorOverride ?? null,
+      frameId: activeScene.frameId ?? "none",
+    }),
+    [activeScene]
+  );
 
   return (
     <div
@@ -15,19 +41,37 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
       style={{ aspectRatio: "9 / 16" }}
     >
       <div className="relative h-full overflow-hidden rounded-[28px] border border-rim bg-black shadow-[0_30px_80px_-30px_rgba(0,0,0,0.8)]">
-        <Player
-          component={SceneSeries}
-          inputProps={inputProps}
-          durationInFrames={durationInFrames}
-          fps={FPS}
-          compositionWidth={WIDTH}
-          compositionHeight={HEIGHT}
-          style={{ width: "100%", height: "100%" }}
-          controls
-          loop
-          autoPlay
-          acknowledgeRemotionLicense
-        />
+        {isSceneMode ? (
+          <Player
+            key={`scene-${activeScene.id}`}
+            component={VideoComposition}
+            inputProps={sceneInputProps}
+            durationInFrames={durationInFrames}
+            fps={FPS}
+            compositionWidth={WIDTH}
+            compositionHeight={HEIGHT}
+            style={{ width: "100%", height: "100%" }}
+            controls
+            loop
+            autoPlay
+            acknowledgeRemotionLicense
+          />
+        ) : (
+          <Player
+            key="full"
+            component={SceneSeries}
+            inputProps={fullInputProps}
+            durationInFrames={durationInFrames}
+            fps={FPS}
+            compositionWidth={WIDTH}
+            compositionHeight={HEIGHT}
+            style={{ width: "100%", height: "100%" }}
+            controls
+            loop
+            autoPlay
+            acknowledgeRemotionLicense
+          />
+        )}
         {showSafeArea && (
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute inset-x-0 top-0 h-[14%] bg-accent-purple/10 border-b border-accent-purple/30" />
@@ -39,7 +83,9 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
         )}
       </div>
       <p className="mt-3 text-center text-xs text-muted">
-        {(durationInFrames / FPS).toFixed(1)}s total · {scenes.length} scene{scenes.length !== 1 ? "s" : ""} · 1080×1920 · 9:16
+        {isSceneMode
+          ? `Scene ${activeIndex + 1} of ${scenes.length} · ${(durationInFrames / FPS).toFixed(1)}s · 1080×1920 · 9:16`
+          : `${(durationInFrames / FPS).toFixed(1)}s total · ${scenes.length} scene${scenes.length !== 1 ? "s" : ""} · 1080×1920 · 9:16`}
       </p>
     </div>
   );

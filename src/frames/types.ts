@@ -6,10 +6,10 @@ export type FrameId =
   | "neon-glow"
   | "film-strip"
   | "polaroid"
-  | "vignette-frame"
   | "dark-spotlight"
   | "cinematic-scope"
-  | "tv-frame";
+  | "tv-frame"
+  | "floating-device";
 
 export type Frame = { id: FrameId; label: string; description: string };
 
@@ -22,8 +22,8 @@ export const FRAMES: Frame[] = [
   { id: "neon-glow", label: "Neon Glow", description: "Electric cyan border with outer glow" },
   { id: "film-strip", label: "Film Strip", description: "Sprocket holes on left and right edges" },
   { id: "polaroid", label: "Polaroid", description: "Classic white border with thick bottom" },
-  { id: "vignette-frame", label: "Vignette", description: "Heavy radial darkening, focus center" },
   { id: "dark-spotlight", label: "Dark Spotlight", description: "Oval spotlight, dramatic dark surround" },
   { id: "cinematic-scope", label: "Cinematic Scope", description: "Anamorphic 2.39:1 letterbox bars" },
   { id: "tv-frame", label: "TV Frame", description: "Retro CRT television shell" },
+  { id: "floating-device", label: "Floating Device", description: "Phone floating on solid background" },
 ];

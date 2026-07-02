@@ -6,10 +6,10 @@ import { GradientBorder } from "./components/GradientBorder";
 import { NeonGlow } from "./components/NeonGlow";
 import { FilmStrip } from "./components/FilmStrip";
 import { Polaroid } from "./components/Polaroid";
-import { VignetteFrame } from "./components/VignetteFrame";
 import { DarkSpotlight } from "./components/DarkSpotlight";
 import { CinematicScope } from "./components/CinematicScope";
 import { TvFrame } from "./components/TvFrame";
+import { FloatingDevice } from "./components/FloatingDevice";
 
 export function wrapInFrame(
   frameId: FrameId,
@@ -59,13 +59,6 @@ export function wrapInFrame(
       </Polaroid>
     );
   }
-  if (frameId === "vignette-frame") {
-    return (
-      <VignetteFrame width={width} height={height}>
-        {children}
-      </VignetteFrame>
-    );
-  }
   if (frameId === "dark-spotlight") {
     return (
       <DarkSpotlight width={width} height={height}>
@@ -85,6 +78,13 @@ export function wrapInFrame(
       <TvFrame width={width} height={height}>
         {children}
       </TvFrame>
+    );
+  }
+  if (frameId === "floating-device") {
+    return (
+      <FloatingDevice width={width} height={height}>
+        {children}
+      </FloatingDevice>
     );
   }
   return <>{children}</>;

@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Layers, Smartphone, type LucideIcon } from "lucide-react";
 import { useStore } from "../store";
 import { TEMPLATES } from "../../templates/registry";
@@ -11,6 +11,14 @@ const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
 
 export const NavSidebar: React.FC = () => {
   const { scenes, activeSceneId, setActiveScene } = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const onScenePage = location.pathname.startsWith("/editor/scene/");
+
+  const selectScene = (id: string) => {
+    setActiveScene(id);
+    if (onScenePage) navigate(`/editor/scene/${id}`);
+  };
 
   return (
     <>
@@ -44,7 +52,7 @@ export const NavSidebar: React.FC = () => {
             return (
               <button
                 key={scene.id}
-                onClick={() => setActiveScene(scene.id)}
+                onClick={() => selectScene(scene.id)}
                 title={`Scene ${idx + 1}`}
                 aria-pressed={isActive}
                 className={`flex h-9 w-9 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border transition ${
