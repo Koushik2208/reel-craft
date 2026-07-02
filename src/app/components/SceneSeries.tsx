@@ -33,6 +33,7 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
                 layerMode={scene.layerMode ?? "full"}
                 textColorOverride={scene.textColorOverride ?? null}
                 frameId={scene.frameId ?? "none"}
+                overlays={scene.overlays ?? []}
               >
                 {!skipFinishes && finishes?.vignette && <VignetteOverlay />}
                 {!skipFinishes && finishes?.grain && <GrainOverlay />}

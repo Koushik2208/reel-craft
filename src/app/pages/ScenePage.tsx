@@ -8,6 +8,7 @@ import { FPS } from "../../templates/shared/timing";
 import { splitTextIntoScenes, MAX_CHARS_PER_SCENE } from "../../templates/shared/textSplit";
 import { LANGUAGES } from "../../templates/shared/language";
 import { FRAMES } from "../../frames/types";
+import { OVERLAYS } from "../../overlays/types";
 
 const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "full", label: "Full" },
@@ -369,6 +370,36 @@ export const ScenePage: React.FC = () => {
             className="flex shrink-0 items-center gap-1 text-[12px] text-accent-purple transition hover:underline"
           >
             Go to Frames page
+            <ChevronRight size={12} />
+          </NavLink>
+        </div>
+      </Section>
+
+      {/* ── Overlays (lightweight reference) ── */}
+      <Section title="Overlays">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-rim bg-surface px-3.5 py-2.5 shadow-rim">
+          {scene.overlays.length > 0 ? (
+            <div className="flex flex-1 flex-wrap gap-1.5">
+              {scene.overlays.map((o) => {
+                const label = OVERLAYS.find((m) => m.id === o.id)?.label ?? o.id;
+                return (
+                  <span
+                    key={o.id}
+                    className="rounded-full border border-accent-purple/40 bg-accent-purple/10 px-2.5 py-1 text-[11px] font-medium text-accent-purple"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <span className="flex-1 text-[13px] text-muted">No overlays</span>
+          )}
+          <NavLink
+            to="/overlays"
+            className="flex shrink-0 items-center gap-1 text-[12px] text-accent-purple transition hover:underline"
+          >
+            Go to Overlays page
             <ChevronRight size={12} />
           </NavLink>
         </div>

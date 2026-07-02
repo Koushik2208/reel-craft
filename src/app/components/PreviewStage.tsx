@@ -31,6 +31,7 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
       layerMode: activeScene.layerMode ?? "full",
       textColorOverride: activeScene.textColorOverride ?? null,
       frameId: activeScene.frameId ?? "none",
+      overlays: activeScene.overlays ?? [],
     }),
     [activeScene]
   );

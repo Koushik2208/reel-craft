@@ -19,6 +19,7 @@ const defaultScenes: Scene[] = [
     layerMode: "full",
     textColorOverride: null,
     frameId: "none",
+    overlays: [],
   },
   {
     id: "scene-2",
@@ -31,6 +32,7 @@ const defaultScenes: Scene[] = [
     layerMode: "full",
     textColorOverride: null,
     frameId: "none",
+    overlays: [],
   },
 ];
 

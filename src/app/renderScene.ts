@@ -40,6 +40,7 @@ export function renderSceneToFile(
     layerMode: scene.layerMode,
     textColorOverride: scene.textColorOverride ?? null,
     frameId: scene.frameId ?? "none",
+    overlays: scene.overlays ?? [],
   };
 
   const promise = (async () => {

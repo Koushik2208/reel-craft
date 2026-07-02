@@ -6,6 +6,7 @@ import { TEMPLATES } from "../templates/registry";
 import { durationInFramesFor, FPS } from "../templates/shared/timing";
 import { splitTextIntoScenes } from "../templates/shared/textSplit";
 import type { FrameId } from "../frames/types";
+import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../overlays/types";
 
 export type Asset = { src: string; kind: "image" | "video"; name: string } | null;
 
@@ -41,6 +42,7 @@ export type Scene = {
   layerMode: LayerMode;
   textColorOverride: string | null;
   frameId: FrameId;
+  overlays: ActiveOverlay[];
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -65,6 +67,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     layerMode: "full",
     textColorOverride: null,
     frameId: "none",
+    overlays: [],
     ...overrides,
   };
 }
@@ -94,15 +97,25 @@ type State = {
   setLayerMode: (mode: LayerMode) => void;
   setTextColorOverride: (color: string | null) => void;
   setFrame: (id: FrameId) => void;
+  toggleOverlay: (id: OverlayId) => void;
+  setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   applyAutoSplit: (sceneId: string) => void;
   applyStyleToAllScenes: (sourceId: string) => void;
   applyFrameToAllScenes: (sourceId: string) => void;
+  applyOverlaysToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
   setAudioFadeIn: (seconds: number) => void;
   setAudioFadeOut: (seconds: number) => void;
   clearAudio: () => void;
   setFinish: (key: keyof CinematicFinishes, value: boolean) => void;
+};
+
+type PersistedState = {
+  scenes: (Omit<Scene, "asset"> & { asset: null })[];
+  activeSceneId: string;
+  audio: ProjectAudio;
+  finishes: CinematicFinishes;
 };
 
 function patchActive(scenes: Scene[], activeId: string, patch: Partial<Scene>): Scene[] {
@@ -204,6 +217,25 @@ export const useStore = create<State>()(
       setFrame: (frameId) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { frameId }) })),
 
+      toggleOverlay: (id) =>
+        set((s) => {
+          const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
+          if (!active) return {};
+          const exists = active.overlays.some((o) => o.id === id);
+          const overlays = exists
+            ? active.overlays.filter((o) => o.id !== id)
+            : [...active.overlays, { id, intensity: "medium" as OverlayIntensity }];
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { overlays }) };
+        }),
+
+      setOverlayIntensity: (id, intensity) =>
+        set((s) => {
+          const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
+          if (!active) return {};
+          const overlays = active.overlays.map((o) => (o.id === id ? { ...o, intensity } : o));
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { overlays }) };
+        }),
+
       applyAutoSplit: (sceneId) => {
         const { scenes } = get();
         const idx = scenes.findIndex((s) => s.id === sceneId);
@@ -290,11 +322,32 @@ export const useStore = create<State>()(
           scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, frameId: source.frameId })),
         });
       },
+
+      applyOverlaysToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, overlays: source.overlays })),
+        });
+      },
     }),
     {
       name: "reelcraft",
+      version: 1,
+      // Older persisted scenes predate the `overlays` field; backfill it so
+      // components can safely assume it's always an array.
+      migrate: (persistedState) => {
+        const state = persistedState as Omit<PersistedState, "scenes"> & {
+          scenes: (Omit<Scene, "asset" | "overlays"> & { asset: null; overlays?: ActiveOverlay[] })[];
+        };
+        return {
+          ...state,
+          scenes: state.scenes.map((s) => ({ ...s, overlays: s.overlays ?? [] })),
+        };
+      },
       // Object URLs don't survive reload; strip asset from every scene and audio.src.
-      partialize: (s) => ({
+      partialize: (s): PersistedState => ({
         scenes: s.scenes.map(({ asset: _asset, ...rest }) => ({ ...rest, asset: null })),
         activeSceneId: s.activeSceneId,
         audio: s.audio ? { ...s.audio, src: null } : null,
