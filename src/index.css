@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root { color-scheme: dark; }
+html { scroll-behavior: smooth; }
 html, body, #root { height: 100%; }
 body {
   margin: 0;
@@ -17,6 +18,12 @@ body {
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: #252535; border-radius: 8px; }
 *::-webkit-scrollbar-track { background: transparent; }
+
+/* landing page: slow gradient drift inside the phone mockup screen */
+@keyframes reel-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }

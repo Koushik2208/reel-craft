@@ -21,6 +21,7 @@ export default {
       },
       fontFamily: {
         ui: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Montserrat", "Inter", "ui-sans-serif", "sans-serif"],
       },
     },
   },
