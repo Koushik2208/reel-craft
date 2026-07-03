@@ -41,6 +41,7 @@ export const TvFrame: React.FC<TvFrameProps> = ({ children, width, height }) => 
             borderRadius: screenRadius,
             backgroundColor: "#0A0A0A",
             overflow: "hidden",
+            clipPath: `inset(0px round ${screenRadius}px)`,
           }}
         >
           <div

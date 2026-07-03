@@ -35,6 +35,7 @@ export const FloatingDevice: React.FC<FloatingDeviceProps> = ({
           height: shellHeight,
           borderRadius: outerRadius,
           overflow: "hidden",
+          clipPath: `inset(0px round ${outerRadius}px)`,
           boxShadow: "0 32px 120px rgba(0,0,0,0.25)",
         }}
       >

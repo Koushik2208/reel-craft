@@ -31,18 +31,10 @@ export const MinimalBezel: React.FC<MinimalBezelProps> = ({ children, width, hei
           height: innerHeight,
           borderRadius: innerRadius,
           overflow: "hidden",
+          clipPath: `inset(0px round ${innerRadius}px)`,
         }}
       >
-        <div
-          style={{
-            width,
-            height,
-            transform: `scale(${innerWidth / width}, ${innerHeight / height})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {children}
-        </div>
+        <AbsoluteFill>{children}</AbsoluteFill>
       </div>
       <div
         style={{

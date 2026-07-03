@@ -52,6 +52,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = ({ children, width, h
           right: 0,
           bottom: 0,
           overflow: "hidden",
+          clipPath: "inset(0px)",
         }}
       >
         <div

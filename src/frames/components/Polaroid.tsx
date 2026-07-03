@@ -28,6 +28,7 @@ export const Polaroid: React.FC<PolaroidProps> = ({ children, width, height }) =
           width: innerWidth,
           height: innerHeight,
           overflow: "hidden",
+          clipPath: "inset(0px)",
         }}
       >
         <div

@@ -46,11 +46,10 @@ export type Scene = {
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
-const MANUAL_MAX = Math.round(20 * FPS);
 
 export function sceneDurationInFrames(scene: Scene): number {
   if (scene.durationMode === "manual" && scene.manualDurationInFrames !== undefined) {
-    return Math.min(Math.max(scene.manualDurationInFrames, MANUAL_MIN), MANUAL_MAX);
+    return Math.max(scene.manualDurationInFrames, MANUAL_MIN);
   }
   return durationInFramesFor(scene.text);
 }

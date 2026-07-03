@@ -10,7 +10,7 @@ export const CinematicScope: React.FC<CinematicScopeProps> = ({ children, height
 
   return (
     <AbsoluteFill>
-      {children}
+      <AbsoluteFill style={{ overflow: "hidden", clipPath: "inset(0px)" }}>{children}</AbsoluteFill>
       <AbsoluteFill style={{ pointerEvents: "none" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: barHeight, backgroundColor: "#000" }}>
           <div

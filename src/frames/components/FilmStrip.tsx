@@ -43,7 +43,7 @@ export const FilmStrip: React.FC<FilmStripProps> = ({ children, width, height })
 
   return (
     <AbsoluteFill>
-      {children}
+      <AbsoluteFill style={{ overflow: "hidden", clipPath: "inset(0px)" }}>{children}</AbsoluteFill>
       <AbsoluteFill style={{ pointerEvents: "none" }}>
         {strip("left")}
         {strip("right")}

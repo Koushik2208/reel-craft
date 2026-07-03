@@ -33,6 +33,7 @@ export const GradientBorder: React.FC<GradientBorderProps> = ({ children, width 
             bottom: thickness,
             borderRadius: innerRadius,
             overflow: "hidden",
+            clipPath: `inset(0px round ${innerRadius}px)`,
           }}
         >
           {children}

@@ -6,7 +6,7 @@ export type DarkSpotlightProps = { children: React.ReactNode; width: number; hei
 export const DarkSpotlight: React.FC<DarkSpotlightProps> = ({ children }) => {
   return (
     <AbsoluteFill>
-      {children}
+      <AbsoluteFill style={{ overflow: "hidden", clipPath: "inset(0px)" }}>{children}</AbsoluteFill>
       <AbsoluteFill
         style={{
           pointerEvents: "none",

@@ -347,7 +347,6 @@ export const ScenePage: React.FC = () => {
             <input
               type="number"
               min={1.5}
-              max={20}
               step={0.5}
               value={(manualInputFrames / FPS).toFixed(1)}
               onChange={(e) => {

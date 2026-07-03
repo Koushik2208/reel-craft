@@ -22,8 +22,15 @@ export function getExportFormat(_layerMode: LayerMode): ExportFormat {
 }
 
 // Renders entirely in the browser with WebCodecs — no server, no upload.
-// `allowHtmlInCanvas` takes a real screenshot per frame so gradients, fonts
-// and filters render exactly like the preview.
+// `allowHtmlInCanvas` opts into Chromium's experimental drawElementImage API
+// when available; most browsers lack it and silently fall back to
+// @remotion/web-renderer's built-in DOM-to-canvas composer, which already
+// replicates overflow/border-radius/clip-path clipping faithfully. It is not
+// what makes exported clipping match the Player preview — the Player clips
+// its preview to the exact composition bounds by default, but the renderer's
+// offscreen scaffold does not, so any content the composition itself doesn't
+// explicitly clip to WIDTH x HEIGHT (see VideoComposition.tsx) can bleed past
+// the canvas edge on export while looking fine in preview.
 export function renderToMp4(
   props: SceneSeriesProps,
   durationInFrames: number,

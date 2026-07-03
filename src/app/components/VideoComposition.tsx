@@ -31,8 +31,14 @@ export const VideoComposition: React.FC<CompositionProps & { children?: React.Re
 }) => {
   const meta = TEMPLATES[template] ?? TEMPLATES.minimal;
   const Template = meta.component;
+  // Clipped to the exact canvas bounds here (not just inside individual frame
+  // components) so scenes without a frame (frameId "none") are also clipped.
+  // The web renderer's export scaffold, unlike the Player preview, doesn't
+  // clip content to the composition size on its own -- content that bleeds
+  // past the canvas edge (e.g. a Ken Burns zoom) would render fine in preview
+  // but bleed uncontained in the exported video without this.
   const content = (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ overflow: "hidden", clipPath: "inset(0px)" }}>
       <Template {...rest} />
       {children}
       <RenderOverlays overlays={overlays} />
