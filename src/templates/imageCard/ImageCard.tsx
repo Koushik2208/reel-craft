@@ -5,6 +5,7 @@ import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
 import { getContrastAdjustment } from "../shared/autoContrast";
+import { getImageEffectStyle } from "../shared/imageEffects";
 
 type Look = { text: string; font: string; size: number; weight: number; upper: boolean; scrim: string };
 
@@ -26,6 +27,7 @@ export const ImageCard: React.FC<VideoProps> = ({
   language = "en",
   layerMode = "full",
   textColorOverride = null,
+  imageEffect = "zoom-in",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -75,9 +77,7 @@ export const ImageCard: React.FC<VideoProps> = ({
   const textColor = textColorOverride ?? adjustment.textColor;
   const extraOpacity = backgroundSrc ? Math.min(0.25, Math.max(0, (adjustment.overlayOpacity - 1.0) * 0.25)) : 0;
 
-  // Slow pan + zoom across the still.
-  const scale = interpolate(frame, [0, durationInFrames], [1.06, 1.16]);
-  const pan = interpolate(frame, [0, durationInFrames], [-18, 18]);
+  const effectStyle = getImageEffectStyle(imageEffect, frame, durationInFrames);
   const fadeOut = interpolate(
     frame,
     [durationInFrames - 18, durationInFrames - 2],
@@ -96,7 +96,14 @@ export const ImageCard: React.FC<VideoProps> = ({
     <AbsoluteFill style={{ backgroundColor: isGreenscreen ? "#00FF00" : "#0b0b10" }}>
       {!isGreenscreen && (
         <>
-          <AbsoluteFill style={{ transform: `scale(${scale}) translateX(${pan}px)` }}>
+          <AbsoluteFill
+            style={{
+              transform: effectStyle.transform,
+              filter: effectStyle.filter,
+              opacity: effectStyle.opacity ?? 1,
+              transformOrigin: "center center",
+            }}
+          >
             {backgroundSrc ? (
               <Img src={backgroundSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (

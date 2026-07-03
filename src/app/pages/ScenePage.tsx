@@ -1,6 +1,26 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, NavLink } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Upload, X, Check, Clock, Scissors } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Upload,
+  X,
+  Check,
+  Clock,
+  Scissors,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  Zap,
+  Wind,
+  Paintbrush,
+  type LucideIcon,
+} from "lucide-react";
 import { useStore, sceneDurationInFrames } from "../store";
 import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
 import type { LayerMode, TemplateId } from "../../templates/schema";
@@ -9,12 +29,33 @@ import { splitTextIntoScenes, MAX_CHARS_PER_SCENE } from "../../templates/shared
 import { LANGUAGES } from "../../templates/shared/language";
 import { FRAMES } from "../../frames/types";
 import { OVERLAYS } from "../../overlays/types";
+import { IMAGE_EFFECT_IDS, IMAGE_EFFECT_LABELS, type ImageEffect } from "../../templates/shared/imageEffects";
 
 const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "full", label: "Full" },
   { id: "greenscreen", label: "Green Screen" },
   { id: "background-only", label: "Background only" },
 ];
+
+const IMAGE_EFFECT_ICONS: Record<ImageEffect, LucideIcon> = {
+  none: X,
+  "zoom-in": ZoomIn,
+  "zoom-out": ZoomOut,
+  "pan-left": ArrowLeft,
+  "pan-right": ArrowRight,
+  "pan-up": ArrowUp,
+  "pan-down": ArrowDown,
+  "ken-burns": Move,
+  "slide-in": ChevronUp,
+  "scale-pop": Zap,
+  sway: Wind,
+};
+
+const IMAGE_EFFECT_OPTIONS = IMAGE_EFFECT_IDS.map((id) => ({
+  id,
+  label: IMAGE_EFFECT_LABELS[id],
+  icon: IMAGE_EFFECT_ICONS[id],
+}));
 
 const TEXT_COLOR_SWATCHES = [
   "#FFFFFF",
@@ -59,12 +100,22 @@ export const ScenePage: React.FC = () => {
     setManualDuration,
     setLayerMode,
     setTextColorOverride,
+    setImageEffect,
+    applyImageEffectToAllScenes,
     applyAutoSplit,
     setFinish,
   } = useStore();
 
   const scene = scenes.find((s) => s.id === sceneId);
   const idx = scenes.findIndex((s) => s.id === sceneId);
+
+  const [effectApplied, setEffectApplied] = useState(false);
+  const handleApplyEffect = () => {
+    if (!scene) return;
+    applyImageEffectToAllScenes(scene.id);
+    setEffectApplied(true);
+    setTimeout(() => setEffectApplied(false), 2000);
+  };
 
   useEffect(() => {
     if (!scene) {
@@ -230,6 +281,47 @@ export const ScenePage: React.FC = () => {
             );
           })}
         </div>
+      </Section>
+
+      {/* ── Image Effect ── */}
+      <Section title="Image Effect">
+        <div className="grid grid-cols-3 gap-2">
+          {IMAGE_EFFECT_OPTIONS.map((opt) => {
+            const active = (scene.imageEffect ?? "zoom-in") === opt.id;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setImageEffect(opt.id)}
+                className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
+                  active
+                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                    : "border-rim bg-surface text-muted hover:border-accent-purple"
+                }`}
+              >
+                <Icon size={15} />
+                <div className="text-[11px] font-medium leading-snug">{opt.label}</div>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={handleApplyEffect}
+          disabled={scenes.length <= 1}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {effectApplied ? (
+            <>
+              <Check size={14} className="text-accent-purple" />
+              <span className="text-accent-purple">Applied</span>
+            </>
+          ) : (
+            <>
+              <Paintbrush size={14} />
+              Apply effect to all scenes
+            </>
+          )}
+        </button>
       </Section>
 
       {/* ── Background (per-scene) ── */}

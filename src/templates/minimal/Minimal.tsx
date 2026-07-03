@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { getFontsForLanguage } from "../shared/language";
 import { fraunces } from "../shared/fonts";
+import { getImageEffectStyle } from "../shared/imageEffects";
 import type { VideoProps } from "../schema";
 
 type Look = { bg: string; text: string; font: string; weight: number; tracking: string };
@@ -23,10 +24,12 @@ export const Minimal: React.FC<VideoProps> = ({
   language = "en",
   layerMode = "full",
   textColorOverride = null,
+  imageEffect = "zoom-in",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const fonts = getFontsForLanguage(language);
+  const effectStyle = getImageEffectStyle(imageEffect, frame, durationInFrames);
   const frauncesFallback = language === "te" ? fonts.display : fraunces;
 
   const LOOKS: Record<string, Look> = {
@@ -59,29 +62,34 @@ export const Minimal: React.FC<VideoProps> = ({
   }
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: layerMode === "greenscreen" ? "#00FF00" : look.bg,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <div
+    <AbsoluteFill>
+      <AbsoluteFill
         style={{
-          opacity,
-          transform: `translateY(${rise}px)`,
-          maxWidth: "80%",
-          textAlign: "center",
-          color: textColorOverride ?? look.text,
-          fontFamily: look.font,
-          fontWeight: look.weight,
-          fontSize: 52,
-          lineHeight,
-          letterSpacing: look.tracking,
+          backgroundColor: layerMode === "greenscreen" ? "#00FF00" : look.bg,
+          transform: effectStyle.transform,
+          filter: effectStyle.filter,
+          opacity: effectStyle.opacity ?? 1,
+          transformOrigin: "center center",
         }}
-      >
-        {text}
-      </div>
+      />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
+        <div
+          style={{
+            opacity,
+            transform: `translateY(${rise}px)`,
+            maxWidth: "80%",
+            textAlign: "center",
+            color: textColorOverride ?? look.text,
+            fontFamily: look.font,
+            fontWeight: look.weight,
+            fontSize: 52,
+            lineHeight,
+            letterSpacing: look.tracking,
+          }}
+        >
+          {text}
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

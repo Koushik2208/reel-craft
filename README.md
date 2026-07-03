@@ -1,111 +1,271 @@
 # Reel Craft
 
-A personal, no-backend tool for making short typography videos for Reels / Shorts / TikTok.
-Paste text → pick a finished look → download an MP4. Everything renders in your browser.
+## What is Reel Craft
 
-## Run it
+Reel Craft is a no-backend, browser-based tool for creating vertical video content for
+Instagram Reels, YouTube Shorts, and TikTok. There is no server and no signup — you open the
+app, build a video out of text, images, video clips, and (optionally) audio, and it renders an
+MP4 entirely client-side using WebCodecs. Nothing is uploaded anywhere.
+
+Reel Craft is designed to work alongside **DaVinci Resolve** for final finishing, not to replace
+it. Reel Craft handles the visual content creation — templates, captions, frames, overlays,
+motion effects. DaVinci (or CapCut, or any NLE) handles audio mixing, sound design, color
+grading, and multi-track composition. Green Screen layer mode exists specifically to make that
+handoff easy: export text-on-#00FF00, key it out, composite over your own footage.
+
+## Tech Stack
+
+- React 18 + TypeScript
+- Remotion 4.x (`@remotion/player`, `@remotion/web-renderer`, `@remotion/media`, `@remotion/google-fonts`)
+- Tailwind CSS
+- Zustand (with `persist` middleware — your project survives a reload, minus object URLs)
+- Vite
+- Deployed on Vercel — but there is no backend, no API routes, no database. It's a static SPA.
+
+## Getting Started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the URL it prints (default http://localhost:5173). Use **Chrome or Edge** — in-browser
-video encoding relies on WebCodecs.
+Open the URL Vite prints (default `http://localhost:5173`).
 
-## Daily workflow
+**Use Chrome or Edge for rendering.** In-browser MP4 encoding relies on WebCodecs, which only
+those browsers currently support well. The rest of the app (editing, preview) works anywhere.
 
-1. Paste your text. Long passages are automatically split into multiple scenes.
-2. Pick a template (Minimal / Cinematic / Image Card) per scene.
-3. Drop a background if the template uses one (Cinematic → video, Image Card → image).
-4. Pick a Look (variant).
-5. Optionally set a **Language** (English / Telugu), **Layer Mode**, or **text color override** per scene.
-6. Hit **Download MP4** (or `⌘/Ctrl + Enter`) to export the full stitch, or export individual scenes.
+```bash
+npm run build   # type-check + production bundle
+```
 
-Duration is derived from your text automatically, so nothing gets cut off. Your text and
-choices are remembered between sessions. The 9:16 output is 1080×1920.
+## Two Project Modes
 
-## The three templates
+Every project is either **Manual** or **Linked**. This is the first decision to make, and it
+determines which pages and controls are available. Switch modes with the toggle at the top of
+the editor (`ModeSwitcher`, visible on the Scenes / Linked pages) — switching clears the other
+mode's data, so the app asks for confirmation first.
 
-| Template | Background | What it does | Looks |
+### Manual Mode
+Build a video scene by scene. Each scene has its own text, background (image or video,
+depending on the template), template, look, frame, overlays, image effect, language, and layer
+mode. Scenes play back-to-back (`SceneSeries`), and duration is derived automatically from each
+scene's word count (clamped 3–14s) unless you set a manual duration.
+
+Use Manual Mode for: quote reels, listicles, tutorials, or any video where you're writing/pasting
+text yourself, scene by scene.
+
+### Linked Mode
+Upload one audio file and link it to one transcript (an SRT file). Captions are timed to the
+audio automatically — no per-scene duration guessing. There's a single background (image or
+video), a single template/look, and a project-level caption style. The video's total length is
+the audio's length (minus any trim), capped at 5 minutes.
+
+Use Linked Mode for: voiceovers, TTS narration, or any video where the audio and the captions
+need to line up exactly.
+
+## Feature Catalog
+
+### Templates
+
+Templates are the biggest style choice — they set the background type, text treatment, and
+overall vibe. There are three, each with a family of "looks" (color variants).
+
+| Template | Background | Vibe | Looks |
 |---|---|---|---|
-| **Minimal** | none (solid color) | Centered text, fade in / pause / fade out | Ink, Paper, Midnight |
-| **Cinematic** | video | Dark overlay, slow zoom, word-by-word serif reveal | Noir, Ember, Cool |
-| **Image Card** | image | Gradient scrim, slow pan/zoom, animated text | Frost, Warm, Bold |
+| **Minimal** | none (solid color) | Centered type, fade in / pause / fade out. Clean and quiet — good default for text-first content. | Ink, Paper, Midnight, Rose, Forest, Sand, Slate, Gold (8) |
+| **Cinematic** | video | Dark scrim over a video background, slow zoom, word-by-word serif reveal. Moody and dramatic. | Noir, Ember, Cool, Dusk, Arctic, Sepia, Verdant, None (7 + none) |
+| **Image Card** | image | Gradient scrim over a photo, slow pan/zoom, animated text. Editorial, photo-forward. | Frost, Warm, Bold, Midnight, Ember, Steel, Verdant, None (7 + none) |
 
-## Layer modes
+Pick **Minimal** for pure-text content (quotes, lists, tips). Pick **Cinematic** when you have
+b-roll or footage and want a trailer-like feel. Pick **Image Card** when you have still photos
+and want a caption-card look.
 
-Each scene can be rendered in one of three modes:
+### Frames
 
-- **Full** (default) — background + text, exported as MP4/H.264.
-- **Green Screen** — text over a solid `#00FF00` background, exported as MP4/H.264. Key it out
-  in CapCut, DaVinci, or any editor to composite the text over your own footage.
-- **Background Only** — background without any text overlay, exported as MP4.
+Frames wrap the rendered scene in a decorative shell — a device, a border, a cinematic treatment.
+They're purely cosmetic and stack independently of template/overlay choices.
 
-## Cinematic finishes
+| Frame | Evokes |
+|---|---|
+| **None** | Raw scene, no device |
+| **Minimal Bezel** | Clean, neutral device shell — works with any content |
+| **Browser Window** | Desktop browser chrome (tab bar, traffic lights) |
+| **Gradient Border** | Glowing pink → purple → cyan ring |
+| **Neon Glow** | Electric cyan border with outer glow |
+| **Film Strip** | Sprocket holes down the left and right edges |
+| **Polaroid** | Classic white border with a thick bottom strip |
+| **Dark Spotlight** | Oval spotlight, dramatic dark surround |
+| **Cinematic Scope** | Anamorphic 2.39:1 letterbox bars |
+| **TV Frame** | Retro CRT television shell |
+| **Floating Device** | Phone floating on a solid background |
 
-Global post-processing overlays applied on top of every scene:
+You can also export a frame's shell alone as a transparent PNG (Frames page → "Frame Shell PNG")
+— useful if you want the device chrome as a compositing element in another editor without
+re-exporting the whole video.
 
-- **Grain** — subtle film grain texture.
-- **Vignette** — soft darkened edge.
-- **Letterbox** — cinematic 2.35:1 black bars.
+### Overlays
 
-## If the in-browser render fails
+Overlays are post-processing textures layered on top of a scene. Ten are available, most with a
+low/medium/high intensity control, and they're combinable — stack as many as you like. They
+render in a fixed stack order (subtle textures first, expressive effects on top): grid,
+halftone, noise, film-dust, crt-scanlines, halation, glow-bloom, light-leak, vhs, speed-lines.
 
-Some browsers don't support WebCodecs encoding yet. The CLI render always works and uses
-real Chrome, so it supports every CSS feature:
+| Overlay | Description | Intensity |
+|---|---|---|
+| **CRT Scanlines** | Horizontal scan-line grid | yes |
+| **VHS** | Tape distortion + color fringe | no |
+| **Light Leak** | Animated color bleed across the frame | yes |
+| **Film Dust** | Random grain particles | no |
+| **Noise** | Animated feTurbulence texture | yes |
+| **Glow Bloom** | Radial color glow spread | yes |
+| **Speed Lines** | Radial lines from center | no |
+| **Halftone** | Dot pattern overlay | yes |
+| **Halation** | Soft bloom bleed around bright areas | yes |
+| **Grid** | Subtle flat digital grid | yes |
+
+Typical combos:
+- **Retro VHS**: VHS + CRT Scanlines (high) + Noise (medium)
+- **Film look**: Halation + Film Dust + Noise (low/medium)
+- **Glitch/HUD**: Grid + Glow Bloom
+
+### Image Effects
+
+Motion applied to the scene's background (or the whole frame, in Minimal). Eleven options:
+None, Zoom In, Zoom Out, Pan Left, Pan Right, Pan Up, Pan Down, Ken Burns, Slide In, Scale Pop,
+Sway. Set per-scene in Manual Mode, project-level in Linked Mode.
+
+All four pan-style effects (pan-left/right/up/down, and Ken Burns) hold the image at a constant
+1.2x scale so there's always extra content past the frame edge to reveal as it translates —
+this means they work safely regardless of the source image's aspect ratio or crop.
+
+### Layer Modes
+
+Each scene (or the whole Linked project) renders in one of three modes:
+
+- **Full** (default) — background + text together, exported as a normal MP4.
+- **Greenscreen** — text over a solid `#00FF00` background, no textures/cinematic finishes
+  applied (they'd dirty the key). Use this when you want to composite Reel Craft's text/captions
+  over your own footage in DaVinci, CapCut, or any NLE that can chroma-key.
+- **Background-only** — the background/visuals with no text overlay. Use this to export a clean
+  visual pass separately from the text pass, or when you plan to add captions elsewhere.
+
+### Cinematic Finishes
+
+Project-level toggles applied over every scene (skipped automatically in Greenscreen mode so
+they don't interfere with keying):
+
+- **Grain** — subtle film grain texture
+- **Vignette** — soft darkened edge
+- **Letterbox** — cinematic 2.35:1 black bars
+
+### Languages
+
+English and Telugu, each with a dedicated font stack (Inter/Playfair Display/Bebas Neue for
+English; Baloo 2/Tiro Telugu/Ramabhadra for Telugu). Set per-scene in Manual Mode, project-level
+in Linked Mode.
+
+### Text Color Override
+
+8 fixed swatches for manually forcing the text color, for when auto-contrast (which picks white
+or dark text based on background brightness) doesn't match your creative intent. Resettable back
+to auto per scene.
+
+### Audio
+
+- **Manual Mode**: one project-level audio track (background music) shared across all scenes.
+- **Linked Mode**: the audio *is* the project — it drives total duration and caption timing.
+
+Both support trim-start and fade-in/fade-out (0–5s) controls.
+
+### SRT Import
+
+- **Manual Mode**: importing an SRT generates one scene per subtitle entry, with duration
+  proportional to that entry's timing (long entries are split into multiple scenes, sharing
+  duration by word count).
+- **Linked Mode**: the same SRT file is instead used as the transcript that captions sync to —
+  timestamps map directly onto the audio timeline (adjusted for any trim).
+
+`Whisper` is modeled as a second transcript source (`TranscriptSource`) but not yet wired up —
+SRT is the only transcript input available today.
+
+### Caption Styles (Linked Mode only)
+
+Five caption animation styles: Fade, Pop, Typewriter, Highlight, Slide Up. Highlight needs
+word-level timestamps to dim inactive words — it falls back to a plain fade for block-level (SRT)
+transcripts, since SRT only carries per-line timing.
+
+### Project Title
+
+Sets the downloaded filename for full exports, per-scene exports, and the frame-shell PNG
+export. Falls back to a timestamped default name if left blank or it sanitizes to nothing.
+
+### Per-scene Export
+
+Manual Mode only. Each scene in the scene list can be exported individually as its own MP4,
+carrying the same cinematic finishes as the full render (skipped in Greenscreen mode).
+
+### Prompt Templates Panel
+
+A separate `/prompts` page with copyable prompt templates (Motivational, Personal, Political,
+Cinematic, Nature, Abstract, Urban, Cultural) — reference text for briefing an AI image/video
+generator or TTS tool before bringing the result into Reel Craft. Not a generation feature itself.
+
+## Recommended Workflows
+
+- **Quote reel with voiceover** → Linked Mode + Cinematic template + SRT transcript (e.g. from a
+  TTS/captioning tool) + Halation overlay.
+- **Motivational quote carousel** → Manual Mode + Minimal template + Ken Burns image effect on
+  photo backgrounds.
+- **Retro VHS aesthetic** → Either mode + VHS overlay + CRT Scanlines (high) + Noise (medium).
+- **Green screen for DaVinci compositing** → Layer mode "Greenscreen" + any frame + export as MP4,
+  then key it out in DaVinci over your own footage.
+- **Multilingual reel (Telugu)** → Set language to Telugu on each scene (Manual) or project-wide
+  (Linked); Minimal and Cinematic both render Telugu cleanly via the Baloo 2 / Tiro Telugu stack.
+- **Photo-driven product showcase** → Manual Mode + Image Card template + Pan or Slide In effect
+  per photo + Polaroid or Floating Device frame.
+
+## Rendering
+
+Rendering happens **in the browser** via WebCodecs (`@remotion/web-renderer`) — no upload, no
+server round-trip. This only works reliably in Chrome or Edge. Linked-mode renders are capped at
+5 minutes of audio; manual-mode duration is uncapped (it's the sum of each scene's derived or
+manual duration).
+
+If the in-browser render fails or you need something the web renderer can't handle (e.g. very
+long or audio-heavy renders), fall back to the Remotion CLI, which uses real Chrome under the
+hood and supports every CSS feature:
 
 ```bash
 npx remotion render src/remotion.ts video out.mp4 \
-  --props='{"text":"Your line here","template":"minimal","variant":"ink"}'
+  --props='{"scenes":[...],"audio":null,"finishes":{"grain":false,"vignette":false,"letterbox":false}}'
 ```
 
-For backgrounds via the CLI, put the file in `public/` and pass its name as `backgroundSrc`
-(e.g. `"backgroundSrc":"clip.mp4"`). Preview templates live with `npm run studio`.
+Mobile export is not supported — a banner warns touch users that preview works but they should
+export on desktop Chrome. The download filename is derived from the project title (sanitized;
+falls back to a timestamped default).
 
-## Adding a template
+## Design Philosophy
 
-Each template is one folder under `src/templates/`. A template is a React component that's
-a pure function of `VideoProps` (text, backgroundSrc, variant, language, layerMode,
-textColorOverride), plus an exported list of variants.
-Register it in `src/templates/registry.tsx` and it appears in the UI automatically.
+Reel Craft is a tool for creating visual content, not a full video editor. It intentionally does
+not do multi-track audio mixing, sound effects, or complex color grading — that's DaVinci
+Resolve's job. Reel Craft stays focused: text, template, frame, overlay, motion, captions, export.
+Handing off to a real NLE for finishing is the intended workflow, not a limitation to work around.
 
-```
-src/
-  templates/
-    registry.tsx        # the only file you edit to add a template
-    schema.ts           # VideoProps type (text, variant, language, layerMode, …)
-    shared/             # WordReveal, fonts, timing, textSplit, audioFade, autoContrast
-    minimal/ cinematic/ imageCard/
-  app/
-    App.tsx             # layout + keyboard shortcut + render button
-    store.ts            # multi-scene state (persisted) + uploads + audio
-    render.ts           # full-stitch MP4 render (WebCodecs)
-    renderScene.ts      # single-scene render with cinematic finishes
-    components/
-      Inspector.tsx         # right-panel controls
-      PreviewStage.tsx      # live Remotion Player
-      SceneSeries.tsx       # Remotion Series sequencing all scenes
-      VideoComposition.tsx  # routes props to the active template
-      CinematicFinishes.tsx # Grain / Vignette / Letterbox overlays
-      MobileExportBanner.tsx
-```
+## Known Limitations
 
-## Scripts
+- Render only works reliably in Chrome/Edge (WebCodecs).
+- Linked-mode render duration is capped at 5 minutes.
+- Object URLs (audio, backgrounds) don't survive a page reload — the app prompts you to
+  re-attach the file while keeping your trim/fade/style choices intact.
+- Whisper-based transcription is modeled in the data layer but not implemented — SRT import is
+  the only transcript source today.
+- Only one aspect ratio: 9:16 (1080×1920).
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Start the Vite dev server |
-| `npm run build` | Type-check + production bundle |
-| `npm run studio` | Open Remotion Studio for template preview |
-| `npm run render` | CLI render via Remotion |
-| `npm run generate-favicon` | Regenerate `public/favicon-*.png` assets |
+## Roadmap
 
-## Notes
-
-- Remotion is free for individuals and teams up to 3; a company license is needed at 4+.
-  The in-app render calls `acknowledgeRemotionLicense` for the Player.
-- Keep important text out of the bottom ~18% and top ~14% (the **Safe area** toggle shows where
-  the app's UI sits on each platform).
-- Audio is trimmed, fade-in/out is configurable, and the codec is chosen automatically
-  (AAC → Opus → PCM) based on what your browser supports.
+- Dedicated Text Styles page (currently color-override only)
+- Motion graphics / animated shape layers
+- Social UI frames (TikTok/Instagram HUD overlays)
+- Whisper API integration for word-level captions without manual SRT authoring
+- Project save/load as JSON (currently persisted only to browser storage)
+- Additional aspect ratios beyond 9:16

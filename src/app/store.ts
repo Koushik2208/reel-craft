@@ -7,6 +7,9 @@ import { durationInFramesFor, FPS } from "../templates/shared/timing";
 import { splitTextIntoScenes } from "../templates/shared/textSplit";
 import type { FrameId } from "../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../overlays/types";
+import type { ImageEffect } from "../templates/shared/imageEffects";
+
+export type { ImageEffect };
 
 export type Asset = { src: string; kind: "image" | "video"; name: string } | null;
 
@@ -63,6 +66,7 @@ export type LinkedPair = {
   overlays: ActiveOverlay[];
   captionStyle: CaptionStyle;
   layerMode: LayerMode;
+  imageEffect: ImageEffect;
 } | null;
 
 export const MAX_LINKED_DURATION_SECONDS = 5 * 60;
@@ -91,6 +95,7 @@ function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullab
     overlays: [],
     captionStyle: "fade",
     layerMode: "full",
+    imageEffect: "zoom-in",
     ...overrides,
   };
 }
@@ -117,6 +122,7 @@ export type Scene = {
   textColorOverride: string | null;
   frameId: FrameId;
   overlays: ActiveOverlay[];
+  imageEffect: ImageEffect;
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -141,6 +147,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     textColorOverride: null,
     frameId: "none",
     overlays: [],
+    imageEffect: "zoom-in",
     ...overrides,
   };
 }
@@ -173,6 +180,7 @@ type State = {
         | "overlays"
         | "captionStyle"
         | "layerMode"
+        | "imageEffect"
       >
     >
   ) => void;
@@ -202,6 +210,7 @@ type State = {
   setLayerMode: (mode: LayerMode) => void;
   setTextColorOverride: (color: string | null) => void;
   setFrame: (id: FrameId) => void;
+  setImageEffect: (effect: ImageEffect) => void;
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   applyAutoSplit: (sceneId: string) => void;
@@ -210,6 +219,7 @@ type State = {
   applyStyleToAllScenes: (sourceId: string) => void;
   applyFrameToAllScenes: (sourceId: string) => void;
   applyOverlaysToAllScenes: (sourceId: string) => void;
+  applyImageEffectToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
   setAudioFadeIn: (seconds: number) => void;
@@ -454,6 +464,9 @@ export const useStore = create<State>()(
       setFrame: (frameId) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { frameId }) })),
 
+      setImageEffect: (imageEffect) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { imageEffect }) })),
+
       toggleOverlay: (id) =>
         set((s) => {
           const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
@@ -578,19 +591,46 @@ export const useStore = create<State>()(
           scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, overlays: source.overlays })),
         });
       },
+
+      applyImageEffectToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) =>
+            s.id === sourceId ? s : { ...s, imageEffect: source.imageEffect }
+          ),
+        });
+      },
     }),
     {
       name: "reelcraft",
       version: 1,
-      // Older persisted scenes predate the `overlays` field; backfill it so
-      // components can safely assume it's always an array.
+      // Older persisted scenes predate the `overlays`/`imageEffect` fields;
+      // backfill them so components can safely assume they're always set.
       migrate: (persistedState) => {
-        const state = persistedState as Omit<PersistedState, "scenes"> & {
-          scenes: (Omit<Scene, "asset" | "overlays"> & { asset: null; overlays?: ActiveOverlay[] })[];
+        const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
+          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect"> & {
+            asset: null;
+            overlays?: ActiveOverlay[];
+            imageEffect?: ImageEffect;
+          })[];
+          linkedPair:
+            | (Omit<NonNullable<PersistedState["linkedPair"]>, "imageEffect"> & {
+                imageEffect?: ImageEffect;
+              })
+            | null;
         };
         return {
           ...state,
-          scenes: state.scenes.map((s) => ({ ...s, overlays: s.overlays ?? [] })),
+          scenes: state.scenes.map((s) => ({
+            ...s,
+            overlays: s.overlays ?? [],
+            imageEffect: s.imageEffect ?? "zoom-in",
+          })),
+          linkedPair: state.linkedPair
+            ? { ...state.linkedPair, imageEffect: state.linkedPair.imageEffect ?? "zoom-in" }
+            : state.linkedPair,
         };
       },
       // Object URLs don't survive reload; strip asset from every scene and audio.src.

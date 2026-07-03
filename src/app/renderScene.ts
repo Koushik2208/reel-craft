@@ -41,6 +41,7 @@ export function renderSceneToFile(
     textColorOverride: scene.textColorOverride ?? null,
     frameId: scene.frameId ?? "none",
     overlays: scene.overlays ?? [],
+    imageEffect: scene.imageEffect ?? "zoom-in",
   };
 
   const promise = (async () => {

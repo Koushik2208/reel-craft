@@ -6,6 +6,7 @@ import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
 import { getContrastAdjustment, applyOpacityMultiplier } from "../shared/autoContrast";
+import { getImageEffectStyle } from "../shared/imageEffects";
 
 type Look = { overlay: string; text: string };
 
@@ -37,6 +38,7 @@ export const Cinematic: React.FC<VideoProps> = ({
   language = "en",
   layerMode = "full",
   textColorOverride = null,
+  imageEffect = "zoom-in",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -55,8 +57,7 @@ export const Cinematic: React.FC<VideoProps> = ({
   const overlayColor = backgroundSrc ? applyOpacityMultiplier(look.overlay, adjustment.overlayOpacity) : look.overlay;
   const lineHeight = language === "te" ? 1.2 : 1.1;
 
-  // Slow Ken-Burns zoom across the whole clip.
-  const zoom = interpolate(frame, [0, durationInFrames], [1.08, 1.2]);
+  const effectStyle = getImageEffectStyle(imageEffect, frame, durationInFrames);
   const fadeOut = interpolate(
     frame,
     [durationInFrames - 18, durationInFrames - 2],
@@ -72,7 +73,14 @@ export const Cinematic: React.FC<VideoProps> = ({
       {!isGreenscreen && (
         <>
           {backgroundSrc ? (
-            <AbsoluteFill style={{ transform: `scale(${zoom})` }}>
+            <AbsoluteFill
+              style={{
+                transform: effectStyle.transform,
+                filter: effectStyle.filter,
+                opacity: effectStyle.opacity ?? 1,
+                transformOrigin: "center center",
+              }}
+            >
               <Video
                 src={backgroundSrc}
                 muted
@@ -83,7 +91,10 @@ export const Cinematic: React.FC<VideoProps> = ({
           ) : (
             <AbsoluteFill
               style={{
-                transform: `scale(${zoom})`,
+                transform: effectStyle.transform,
+                filter: effectStyle.filter,
+                opacity: effectStyle.opacity ?? 1,
+                transformOrigin: "center center",
                 background: "radial-gradient(120% 120% at 50% 20%, #2a2a3a 0%, #0b0b10 70%)",
               }}
             />

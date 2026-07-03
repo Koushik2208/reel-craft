@@ -10,6 +10,17 @@ import {
   Sparkles,
   Wand2,
   Image as ImageIcon,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  ChevronUp,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  Zap,
+  Wind,
+  type LucideIcon,
 } from "lucide-react";
 import { useStore, type CaptionStyle } from "../store";
 import { ModeSwitcher } from "../components/ModeSwitcher";
@@ -20,6 +31,7 @@ import { LANGUAGES } from "../../templates/shared/language";
 import { FRAMES, type FrameId } from "../../frames/types";
 import { OVERLAYS, type OverlayIntensity } from "../../overlays/types";
 import { parseSRT, srtEntriesToTranscript } from "../srtParser";
+import { IMAGE_EFFECT_IDS, IMAGE_EFFECT_LABELS, type ImageEffect } from "../../templates/shared/imageEffects";
 
 const TEXT_COLOR_SWATCHES = [
   "#FFFFFF",
@@ -49,6 +61,26 @@ const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "greenscreen", label: "Green Screen" },
   { id: "background-only", label: "Background only" },
 ];
+
+const IMAGE_EFFECT_ICONS: Record<ImageEffect, LucideIcon> = {
+  none: X,
+  "zoom-in": ZoomIn,
+  "zoom-out": ZoomOut,
+  "pan-left": ArrowLeft,
+  "pan-right": ArrowRight,
+  "pan-up": ArrowUp,
+  "pan-down": ArrowDown,
+  "ken-burns": Move,
+  "slide-in": ChevronUp,
+  "scale-pop": Zap,
+  sway: Wind,
+};
+
+const IMAGE_EFFECT_OPTIONS = IMAGE_EFFECT_IDS.map((id) => ({
+  id,
+  label: IMAGE_EFFECT_LABELS[id],
+  icon: IMAGE_EFFECT_ICONS[id],
+}));
 
 const Section: React.FC<{ title: string; children: React.ReactNode; hint?: string }> = ({
   title,
@@ -395,6 +427,29 @@ export const LinkedPage: React.FC = () => {
                   active && <Check size={13} className="text-accent-purple" />
                 )}
                 {v.label}
+              </button>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Image Effect">
+        <div className="grid grid-cols-3 gap-2">
+          {IMAGE_EFFECT_OPTIONS.map((opt) => {
+            const active = (linkedPair?.imageEffect ?? "zoom-in") === opt.id;
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => updateLinkedPairStyle({ imageEffect: opt.id })}
+                className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
+                  active
+                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                    : "border-rim bg-surface text-muted hover:border-accent-purple"
+                }`}
+              >
+                <Icon size={15} />
+                <div className="text-[11px] font-medium leading-snug">{opt.label}</div>
               </button>
             );
           })}
