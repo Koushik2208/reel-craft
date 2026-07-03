@@ -8,6 +8,8 @@ import { splitTextIntoScenes } from "../templates/shared/textSplit";
 import type { FrameId } from "../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../overlays/types";
 import type { ImageEffect } from "../templates/shared/imageEffects";
+import type { ActiveMotion, MotionConfig, MotionId } from "../motion/types";
+import { defaultMotionFor } from "../motion/types";
 
 export type { ImageEffect };
 
@@ -64,6 +66,7 @@ export type LinkedPair = {
   textColorOverride: string | null;
   frameId: FrameId;
   overlays: ActiveOverlay[];
+  motion: ActiveMotion[];
   captionStyle: CaptionStyle;
   layerMode: LayerMode;
   imageEffect: ImageEffect;
@@ -93,6 +96,7 @@ function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullab
     textColorOverride: null,
     frameId: "none",
     overlays: [],
+    motion: [],
     captionStyle: "fade",
     layerMode: "full",
     imageEffect: "zoom-in",
@@ -122,6 +126,7 @@ export type Scene = {
   textColorOverride: string | null;
   frameId: FrameId;
   overlays: ActiveOverlay[];
+  motion: ActiveMotion[];
   imageEffect: ImageEffect;
 };
 
@@ -147,6 +152,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     textColorOverride: null,
     frameId: "none",
     overlays: [],
+    motion: [],
     imageEffect: "zoom-in",
     ...overrides,
   };
@@ -178,6 +184,7 @@ type State = {
         | "textColorOverride"
         | "frameId"
         | "overlays"
+        | "motion"
         | "captionStyle"
         | "layerMode"
         | "imageEffect"
@@ -194,6 +201,8 @@ type State = {
   clearLinkedBackground: () => void;
   toggleLinkedOverlay: (id: OverlayId) => void;
   setLinkedOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
+  toggleLinkedMotion: (id: MotionId) => void;
+  setLinkedMotionConfig: (id: MotionId, config: MotionConfig) => void;
   addScene: () => void;
   duplicateScene: (id: string) => void;
   removeScene: (id: string) => void;
@@ -213,12 +222,15 @@ type State = {
   setImageEffect: (effect: ImageEffect) => void;
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
+  toggleMotion: (id: MotionId) => void;
+  setMotionConfig: (id: MotionId, config: MotionConfig) => void;
   applyAutoSplit: (sceneId: string) => void;
   replaceScenes: (scenes: Scene[]) => void;
   appendScenes: (scenes: Scene[]) => void;
   applyStyleToAllScenes: (sourceId: string) => void;
   applyFrameToAllScenes: (sourceId: string) => void;
   applyOverlaysToAllScenes: (sourceId: string) => void;
+  applyMotionToAllScenes: (sourceId: string) => void;
   applyImageEffectToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
@@ -370,6 +382,25 @@ export const useStore = create<State>()(
           return { linkedPair: { ...s.linkedPair, overlays } };
         }),
 
+      toggleLinkedMotion: (id) =>
+        set((s) => {
+          if (!s.linkedPair) return {};
+          const exists = s.linkedPair.motion.some((m) => m.id === id);
+          const motion = exists
+            ? s.linkedPair.motion.filter((m) => m.id !== id)
+            : [...s.linkedPair.motion, defaultMotionFor(id)];
+          return { linkedPair: { ...s.linkedPair, motion } };
+        }),
+
+      setLinkedMotionConfig: (id, config) =>
+        set((s) => {
+          if (!s.linkedPair) return {};
+          const motion = s.linkedPair.motion.map((m) =>
+            m.id === id ? ({ ...m, config } as ActiveMotion) : m
+          );
+          return { linkedPair: { ...s.linkedPair, motion } };
+        }),
+
       setLinkedOverlayIntensity: (id, intensity) =>
         set((s) => {
           if (!s.linkedPair) return {};
@@ -486,6 +517,25 @@ export const useStore = create<State>()(
           return { scenes: patchActive(s.scenes, s.activeSceneId, { overlays }) };
         }),
 
+      toggleMotion: (id) =>
+        set((s) => {
+          const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
+          if (!active) return {};
+          const exists = active.motion.some((m) => m.id === id);
+          const motion = exists
+            ? active.motion.filter((m) => m.id !== id)
+            : [...active.motion, defaultMotionFor(id)];
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { motion }) };
+        }),
+
+      setMotionConfig: (id, config) =>
+        set((s) => {
+          const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
+          if (!active) return {};
+          const motion = active.motion.map((m) => (m.id === id ? ({ ...m, config } as ActiveMotion) : m));
+          return { scenes: patchActive(s.scenes, s.activeSceneId, { motion }) };
+        }),
+
       applyAutoSplit: (sceneId) => {
         const { scenes } = get();
         const idx = scenes.findIndex((s) => s.id === sceneId);
@@ -592,6 +642,15 @@ export const useStore = create<State>()(
         });
       },
 
+      applyMotionToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, motion: source.motion })),
+        });
+      },
+
       applyImageEffectToAllScenes: (sourceId) => {
         const { scenes } = get();
         const source = scenes.find((s) => s.id === sourceId);
@@ -605,19 +664,21 @@ export const useStore = create<State>()(
     }),
     {
       name: "reelcraft",
-      version: 1,
-      // Older persisted scenes predate the `overlays`/`imageEffect` fields;
-      // backfill them so components can safely assume they're always set.
+      version: 2,
+      // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
+      // fields; backfill them so components can safely assume they're always set.
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
-          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect"> & {
+          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect" | "motion"> & {
             asset: null;
             overlays?: ActiveOverlay[];
             imageEffect?: ImageEffect;
+            motion?: ActiveMotion[];
           })[];
           linkedPair:
-            | (Omit<NonNullable<PersistedState["linkedPair"]>, "imageEffect"> & {
+            | (Omit<NonNullable<PersistedState["linkedPair"]>, "imageEffect" | "motion"> & {
                 imageEffect?: ImageEffect;
+                motion?: ActiveMotion[];
               })
             | null;
         };
@@ -627,9 +688,14 @@ export const useStore = create<State>()(
             ...s,
             overlays: s.overlays ?? [],
             imageEffect: s.imageEffect ?? "zoom-in",
+            motion: s.motion ?? [],
           })),
           linkedPair: state.linkedPair
-            ? { ...state.linkedPair, imageEffect: state.linkedPair.imageEffect ?? "zoom-in" }
+            ? {
+                ...state.linkedPair,
+                imageEffect: state.linkedPair.imageEffect ?? "zoom-in",
+                motion: state.linkedPair.motion ?? [],
+              }
             : state.linkedPair,
         };
       },

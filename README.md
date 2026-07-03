@@ -128,6 +128,25 @@ Typical combos:
 - **Film look**: Halation + Film Dust + Noise (low/medium)
 - **Glitch/HUD**: Grid + Glow Bloom
 
+### Motion Graphics
+
+Stackable animated overlays for adding information/UI-style elements on top of a scene —
+distinct from the textural Overlays above. Five are available, each with its own inline config,
+and they're combinable. They render in a fixed stack order: progress-bar, ticker, step-badge,
+number-counter, countdown.
+
+| Motion Graphic | Description | Config |
+|---|---|---|
+| **Progress Bar** | Thin gradient bar that grows left-to-right across the scene's duration | Position (top / bottom) |
+| **Number Counter** | Large bold number animating from a start to an end value | Start, end, prefix, suffix |
+| **Countdown** | Big centered numbers that spring in one at a time, then disappear at 0 | Start from (3 / 5 / 10) |
+| **Ticker** | Scrolling text bar, semi-transparent background | Text, direction (left / right), position (top / bottom) |
+| **Step Badge** | Small pill reading "Step X / Y" with a gradient border | Step number, total steps, corner position |
+
+Available in both Manual Mode (per-scene, with "Apply motion to all scenes") and Linked Mode
+(project-level). Driven purely by frame/spring interpolation (no CSS animation), so it renders
+identically in preview and in the exported MP4.
+
 ### Image Effects
 
 Motion applied to the scene's background (or the whole frame, in Minimal). Eleven options:
@@ -223,6 +242,8 @@ generator or TTS tool before bringing the result into Reel Craft. Not a generati
   (Linked); Minimal and Cinematic both render Telugu cleanly via the Baloo 2 / Tiro Telugu stack.
 - **Photo-driven product showcase** → Manual Mode + Image Card template + Pan or Slide In effect
   per photo + Polaroid or Floating Device frame.
+- **Tutorial / listicle with steps** → Manual Mode + Step Badge motion graphic per scene (Step 1/N,
+  2/N, ...) + Progress Bar to show overall position.
 
 ## Rendering
 
@@ -264,7 +285,6 @@ Handing off to a real NLE for finishing is the intended workflow, not a limitati
 ## Roadmap
 
 - Dedicated Text Styles page (currently color-override only)
-- Motion graphics / animated shape layers
 - Social UI frames (TikTok/Instagram HUD overlays)
 - Whisper API integration for word-level captions without manual SRT authoring
 - Project save/load as JSON (currently persisted only to browser storage)

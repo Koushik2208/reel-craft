@@ -5,6 +5,7 @@ import { type CinematicFinishes, type LinkedPair } from "../store";
 import { TEMPLATES } from "../../templates/registry";
 import { wrapInFrame } from "../../frames/wrapInFrame";
 import { RenderOverlays } from "../../overlays/renderOverlays";
+import { RenderMotion } from "../../motion/renderMotion";
 import { WIDTH, HEIGHT } from "../../templates/shared/timing";
 import { getAudioVolumeAtFrame } from "../../templates/shared/audioFade";
 import { LinkedCaptions } from "./LinkedCaptions";
@@ -46,6 +47,7 @@ export const LinkedComposition: React.FC<LinkedCompositionProps> = ({ linkedPair
       {!skipFinishes && finishes?.grain && <GrainOverlay />}
       {!skipFinishes && finishes?.letterbox && <LetterboxOverlay />}
       <RenderOverlays overlays={linkedPair.overlays} />
+      <RenderMotion motion={linkedPair.motion} />
     </AbsoluteFill>
   );
 

@@ -30,6 +30,7 @@ function makeGeneratedScene(
     textColorOverride: defaultScene.textColorOverride ?? null,
     frameId: defaultScene.frameId ?? "none",
     overlays: defaultScene.overlays ?? [],
+    motion: defaultScene.motion ?? [],
     imageEffect: defaultScene.imageEffect ?? "zoom-in",
   };
 }

@@ -3,48 +3,17 @@ import { useNavigate } from "react-router-dom";
 import {
   Upload,
   X,
-  Check,
   Music,
   FileText,
   Volume2,
   Sparkles,
   Wand2,
   Image as ImageIcon,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  ArrowDown,
-  ChevronUp,
-  ZoomIn,
-  ZoomOut,
-  Move,
-  Zap,
-  Wind,
-  type LucideIcon,
 } from "lucide-react";
 import { useStore, type CaptionStyle } from "../store";
 import { ModeSwitcher } from "../components/ModeSwitcher";
 import { ProjectTitleInput } from "../components/ProjectTitleInput";
-import type { LayerMode, TemplateId } from "../../templates/schema";
-import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
-import { LANGUAGES } from "../../templates/shared/language";
-import { FRAMES, type FrameId } from "../../frames/types";
-import { OVERLAYS, type OverlayIntensity } from "../../overlays/types";
 import { parseSRT, srtEntriesToTranscript } from "../srtParser";
-import { IMAGE_EFFECT_IDS, IMAGE_EFFECT_LABELS, type ImageEffect } from "../../templates/shared/imageEffects";
-
-const TEXT_COLOR_SWATCHES = [
-  "#FFFFFF",
-  "#F4F3EE",
-  "#FFD966",
-  "#FFE4C0",
-  "#C8F0D8",
-  "#C8E8FF",
-  "#FFD6D6",
-  "#0F0F12",
-];
-
-const INTENSITY_LEVELS: OverlayIntensity[] = ["low", "medium", "high"];
 
 const MAX_LINKED_SECONDS = 300;
 
@@ -55,32 +24,6 @@ const CAPTION_STYLE_OPTIONS: { id: CaptionStyle; label: string }[] = [
   { id: "highlight", label: "Highlight" },
   { id: "slide-up", label: "Slide Up" },
 ];
-
-const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
-  { id: "full", label: "Full" },
-  { id: "greenscreen", label: "Green Screen" },
-  { id: "background-only", label: "Background only" },
-];
-
-const IMAGE_EFFECT_ICONS: Record<ImageEffect, LucideIcon> = {
-  none: X,
-  "zoom-in": ZoomIn,
-  "zoom-out": ZoomOut,
-  "pan-left": ArrowLeft,
-  "pan-right": ArrowRight,
-  "pan-up": ArrowUp,
-  "pan-down": ArrowDown,
-  "ken-burns": Move,
-  "slide-in": ChevronUp,
-  "scale-pop": Zap,
-  sway: Wind,
-};
-
-const IMAGE_EFFECT_OPTIONS = IMAGE_EFFECT_IDS.map((id) => ({
-  id,
-  label: IMAGE_EFFECT_LABELS[id],
-  icon: IMAGE_EFFECT_ICONS[id],
-}));
 
 const Section: React.FC<{ title: string; children: React.ReactNode; hint?: string }> = ({
   title,
@@ -110,8 +53,6 @@ export const LinkedPage: React.FC = () => {
     clearLinkedBackground,
     clearLinkedPair,
     updateLinkedPairStyle,
-    toggleLinkedOverlay,
-    setLinkedOverlayIntensity,
   } = useStore();
 
   const [srtError, setSrtError] = useState<string | null>(null);
@@ -122,8 +63,6 @@ export const LinkedPage: React.FC = () => {
   const audio = linkedPair?.audio ?? null;
   const transcript = linkedPair?.transcript ?? null;
   const background = linkedPair?.background ?? null;
-  const template = linkedPair?.template ?? "minimal";
-  const meta = TEMPLATES[template];
 
   const onAudioFile = (file: File | undefined) => {
     if (!file) return;
@@ -372,294 +311,32 @@ export const LinkedPage: React.FC = () => {
         </Section>
       </div>
 
-      {/* ── Style ── */}
+      {/* ── Caption style ── */}
       <div className="border-t border-rim pt-7">
-        <Section title="Template">
-          <div className="grid grid-cols-3 gap-2">
-            {TEMPLATE_LIST.map((t) => {
-              const active = t.id === template;
+        <Section title="Caption style">
+          <div className="grid grid-cols-5 gap-1.5">
+            {CAPTION_STYLE_OPTIONS.map((opt) => {
+              const active = (linkedPair?.captionStyle ?? "fade") === opt.id;
               return (
                 <button
-                  key={t.id}
-                  onClick={() =>
-                    updateLinkedPairStyle({
-                      template: t.id as TemplateId,
-                      variant: TEMPLATES[t.id].defaultVariant,
-                    })
-                  }
-                  className={`rounded-xl border px-2.5 py-3 text-left transition ${
+                  key={opt.id}
+                  onClick={() => updateLinkedPairStyle({ captionStyle: opt.id })}
+                  className={`rounded-lg border px-1 py-2 text-center text-[10px] font-medium leading-tight transition ${
                     active
-                      ? "border-accent-purple/60 bg-accent-purple/10"
-                      : "border-rim bg-surface hover:border-accent-purple"
+                      ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                      : "border-rim bg-surface text-muted hover:border-accent-purple"
                   }`}
                 >
-                  <div className="text-[13px] font-medium text-zinc-100">{t.label}</div>
-                  <div className="mt-0.5 text-[11px] leading-snug text-muted">{t.blurb}</div>
+                  {opt.label}
                 </button>
               );
             })}
           </div>
-        </Section>
-      </div>
-
-      <Section title="Look">
-        <div className="flex flex-wrap gap-2">
-          {meta.variants.map((v) => {
-            const active = linkedPair ? v.id === linkedPair.variant : false;
-            return (
-              <button
-                key={v.id}
-                onClick={() => updateLinkedPairStyle({ variant: v.id })}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition ${
-                  active
-                    ? "border-accent-purple/60 bg-accent-purple/15 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple hover:text-zinc-200"
-                }`}
-              >
-                {v.colors ? (
-                  <span
-                    className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-white/10"
-                    style={{
-                      background: `linear-gradient(135deg, ${v.colors.bg} 50%, ${v.colors.text} 50%)`,
-                    }}
-                  />
-                ) : (
-                  active && <Check size={13} className="text-accent-purple" />
-                )}
-                {v.label}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-
-      <Section title="Image Effect">
-        <div className="grid grid-cols-3 gap-2">
-          {IMAGE_EFFECT_OPTIONS.map((opt) => {
-            const active = (linkedPair?.imageEffect ?? "zoom-in") === opt.id;
-            const Icon = opt.icon;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => updateLinkedPairStyle({ imageEffect: opt.id })}
-                className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-center transition ${
-                  active
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
-                }`}
-              >
-                <Icon size={15} />
-                <div className="text-[11px] font-medium leading-snug">{opt.label}</div>
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-
-      <Section title="Language">
-        <div className="flex gap-1 rounded-lg border border-rim bg-surface p-0.5">
-          {LANGUAGES.map((lang) => {
-            const active = (linkedPair?.language ?? "en") === lang.id;
-            return (
-              <button
-                key={lang.id}
-                onClick={() => updateLinkedPairStyle({ language: lang.id })}
-                className={`flex-1 rounded-md py-1.5 text-[12px] font-medium transition ${
-                  active
-                    ? "bg-accent-purple/20 text-zinc-100 border border-accent-purple/40"
-                    : "text-muted hover:text-zinc-200"
-                }`}
-              >
-                {lang.label}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
-
-      <Section title="Text color">
-        <div className="flex items-center gap-2 pt-1">
-          {TEXT_COLOR_SWATCHES.map((color) => {
-            const active = linkedPair?.textColorOverride === color;
-            return (
-              <button
-                key={color}
-                onClick={() => updateLinkedPairStyle({ textColorOverride: color })}
-                title={color}
-                aria-pressed={active}
-                className={`h-6 w-6 shrink-0 rounded-full border transition ${
-                  active ? "border-accent-purple ring-2 ring-accent-purple/50" : "border-rim/60 hover:border-accent-purple"
-                }`}
-                style={{ backgroundColor: color }}
-              />
-            );
-          })}
-          {linkedPair?.textColorOverride && (
-            <button
-              onClick={() => updateLinkedPairStyle({ textColorOverride: null })}
-              title="Reset to auto text color"
-              className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-rim text-muted transition hover:border-accent-purple hover:text-zinc-200"
-            >
-              <X size={12} />
-            </button>
+          {linkedPair?.captionStyle === "highlight" && linkedPair?.transcript?.kind !== "word" && (
+            <p className="text-[11px] leading-snug text-muted/70">
+              Highlight needs word-level timestamps — falls back to Fade for SRT transcripts.
+            </p>
           )}
-        </div>
-      </Section>
-
-      <Section title="Caption style">
-        <div className="grid grid-cols-5 gap-1.5">
-          {CAPTION_STYLE_OPTIONS.map((opt) => {
-            const active = (linkedPair?.captionStyle ?? "fade") === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => updateLinkedPairStyle({ captionStyle: opt.id })}
-                className={`rounded-lg border px-1 py-2 text-center text-[10px] font-medium leading-tight transition ${
-                  active
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-        {linkedPair?.captionStyle === "highlight" && linkedPair?.transcript?.kind !== "word" && (
-          <p className="text-[11px] leading-snug text-muted/70">
-            Highlight needs word-level timestamps — falls back to Fade for SRT transcripts.
-          </p>
-        )}
-      </Section>
-
-      <Section title="Layers">
-        <div className="grid grid-cols-3 gap-2">
-          {LAYER_MODE_OPTIONS.map((opt) => {
-            const active = (linkedPair?.layerMode ?? "full") === opt.id;
-            return (
-              <button
-                key={opt.id}
-                onClick={() => updateLinkedPairStyle({ layerMode: opt.id })}
-                className={`rounded-xl border px-2 py-2.5 text-center transition ${
-                  active
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
-                }`}
-              >
-                <div className="text-[12px] font-medium leading-snug">{opt.label}</div>
-              </button>
-            );
-          })}
-        </div>
-        {linkedPair?.layerMode === "greenscreen" && (
-          <p className="text-[11px] leading-snug text-muted/70">
-            Captions on #00FF00 background. Key it out in CapCut, DaVinci, or any editor.
-          </p>
-        )}
-        {linkedPair?.layerMode === "background-only" && !background && (
-          <p className="text-[11px] leading-snug text-amber-400/80">
-            No background — this will export as a transparent frame with no captions.
-          </p>
-        )}
-      </Section>
-
-      {/* ── Frame ── */}
-      <div className="border-t border-rim pt-7">
-        <Section title="Frame">
-          <div className="grid grid-cols-2 gap-2.5">
-            {FRAMES.map((frame) => {
-              const active = frame.id === (linkedPair?.frameId ?? "none");
-              return (
-                <button
-                  key={frame.id}
-                  onClick={() => updateLinkedPairStyle({ frameId: frame.id as FrameId })}
-                  className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-3 text-left transition ${
-                    active
-                      ? "border-accent-purple/60 bg-accent-purple/10"
-                      : "border-rim bg-surface hover:border-accent-purple"
-                  }`}
-                >
-                  <div className="text-[12px] font-medium text-zinc-100">{frame.label}</div>
-                  <div className="text-[11px] leading-snug text-muted">{frame.description}</div>
-                </button>
-              );
-            })}
-          </div>
-        </Section>
-      </div>
-
-      {/* ── Overlays ── */}
-      <div className="border-t border-rim pt-7">
-        <Section title="Overlays">
-          {linkedPair && linkedPair.overlays.length > 0 && (
-            <div className="mb-2.5 flex flex-wrap gap-1.5">
-              {linkedPair.overlays.map((o) => {
-                const label = OVERLAYS.find((m) => m.id === o.id)?.label ?? o.id;
-                return (
-                  <span
-                    key={o.id}
-                    className="rounded-full border border-accent-purple/40 bg-accent-purple/10 px-2.5 py-1 text-[11px] font-medium text-accent-purple"
-                  >
-                    {label}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-2.5">
-            {OVERLAYS.map((overlay) => {
-              const activeOverlay = linkedPair?.overlays.find((o) => o.id === overlay.id);
-              const active = !!activeOverlay;
-              return (
-                <div
-                  key={overlay.id}
-                  className={`rounded-xl border px-3 py-3 transition ${
-                    active
-                      ? "border-accent-purple/60 bg-accent-purple/10"
-                      : "border-rim bg-surface hover:border-accent-purple"
-                  }`}
-                >
-                  <button
-                    onClick={() => toggleLinkedOverlay(overlay.id)}
-                    className="flex w-full items-start justify-between gap-2 text-left"
-                  >
-                    <div>
-                      <div className="text-[12px] font-medium text-zinc-100">{overlay.label}</div>
-                      <div className="mt-0.5 text-[11px] leading-snug text-muted">{overlay.description}</div>
-                    </div>
-                    {active && <Check size={14} className="mt-0.5 shrink-0 text-accent-purple" />}
-                  </button>
-
-                  {active && overlay.hasIntensity && (
-                    <div className="mt-2.5 flex gap-1 rounded-lg border border-rim bg-surface p-0.5">
-                      {INTENSITY_LEVELS.map((level) => {
-                        const on = activeOverlay?.intensity === level;
-                        return (
-                          <button
-                            key={level}
-                            onClick={() => setLinkedOverlayIntensity(overlay.id, level)}
-                            className={`flex-1 rounded-md py-1 text-[10px] font-medium capitalize transition ${
-                              on
-                                ? "border border-accent-purple/40 bg-accent-purple/20 text-zinc-100"
-                                : "text-muted hover:text-zinc-200"
-                            }`}
-                          >
-                            {level}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {active && !overlay.hasIntensity && (
-                    <span className="mt-2.5 inline-block rounded-full border border-accent-purple/40 bg-accent-purple/10 px-2 py-0.5 text-[10px] font-medium text-accent-purple">
-                      On
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </Section>
       </div>
 

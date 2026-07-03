@@ -1,11 +1,13 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Layers, Smartphone, Sparkles, Wand2, type LucideIcon } from "lucide-react";
+import { Layers, Palette, Smartphone, Sparkles, Wand2, Zap, type LucideIcon } from "lucide-react";
 
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/editor", label: "Editor", icon: Layers },
+  { to: "/style", label: "Style", icon: Palette },
   { to: "/frames", label: "Frames", icon: Smartphone },
   { to: "/overlays", label: "Overlays", icon: Sparkles },
+  { to: "/motion", label: "Motion", icon: Zap },
   { to: "/prompts", label: "Prompts", icon: Wand2 },
 ];
 

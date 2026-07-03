@@ -94,6 +94,7 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
       textColorOverride: activeScene.textColorOverride ?? null,
       frameId: activeScene.frameId ?? "none",
       overlays: activeScene.overlays ?? [],
+      motion: activeScene.motion ?? [],
       imageEffect: activeScene.imageEffect ?? "zoom-in",
     }),
     [activeScene]

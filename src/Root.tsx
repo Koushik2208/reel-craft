@@ -20,6 +20,7 @@ const defaultScenes: Scene[] = [
     textColorOverride: null,
     frameId: "none",
     overlays: [],
+    motion: [],
     imageEffect: "zoom-in",
   },
   {
@@ -34,6 +35,7 @@ const defaultScenes: Scene[] = [
     textColorOverride: null,
     frameId: "none",
     overlays: [],
+    motion: [],
     imageEffect: "zoom-in",
   },
 ];

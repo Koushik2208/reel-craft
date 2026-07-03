@@ -34,6 +34,7 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
                 textColorOverride={scene.textColorOverride ?? null}
                 frameId={scene.frameId ?? "none"}
                 overlays={scene.overlays ?? []}
+                motion={scene.motion ?? []}
                 imageEffect={scene.imageEffect ?? "zoom-in"}
               >
                 {!skipFinishes && finishes?.vignette && <VignetteOverlay />}

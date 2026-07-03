@@ -6,12 +6,15 @@ import type { FrameId } from "../../frames/types";
 import { wrapInFrame } from "../../frames/wrapInFrame";
 import type { ActiveOverlay } from "../../overlays/types";
 import { RenderOverlays } from "../../overlays/renderOverlays";
+import type { ActiveMotion } from "../../motion/types";
+import { RenderMotion } from "../../motion/renderMotion";
 import { WIDTH, HEIGHT } from "../../templates/shared/timing";
 
 export type CompositionProps = VideoProps & {
   template: TemplateId;
   frameId?: FrameId;
   overlays?: ActiveOverlay[];
+  motion?: ActiveMotion[];
 };
 
 // One component the Player and the renderer both point at. Picking the
@@ -26,6 +29,7 @@ export const VideoComposition: React.FC<CompositionProps & { children?: React.Re
   template,
   frameId = "none",
   overlays = [],
+  motion = [],
   children,
   ...rest
 }) => {
@@ -42,6 +46,7 @@ export const VideoComposition: React.FC<CompositionProps & { children?: React.Re
       <Template {...rest} />
       {children}
       <RenderOverlays overlays={overlays} />
+      <RenderMotion motion={motion} />
     </AbsoluteFill>
   );
   return wrapInFrame(frameId, WIDTH, HEIGHT, content);

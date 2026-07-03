@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Check, Download, Loader2, Paintbrush } from "lucide-react";
 import { useStore } from "../store";
+import { useActiveStyle } from "../hooks/useActiveStyle";
+import { EmptyTargetState } from "./EmptyTargetState";
 import { FRAMES, type FrameId } from "../../frames/types";
 import { exportFrameAsPng } from "../../frames/exportFramePng";
 import { titledFilename } from "../render";
@@ -40,20 +42,19 @@ const FramePreview: React.FC<{ id: FrameId }> = ({ id }) => {
 };
 
 export const FramesPanel: React.FC = () => {
-  const { scenes, activeSceneId, setActiveScene, setFrame, applyFrameToAllScenes, projectTitle } =
-    useStore();
-  const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
-  const frameId: FrameId = activeScene.frameId ?? "none";
+  const { scenes, activeSceneId, setActiveScene, projectTitle } = useStore();
+  const style = useActiveStyle();
 
   const [applied, setApplied] = useState(false);
   const handleApplyAll = () => {
-    applyFrameToAllScenes(activeSceneId);
+    if (!style.ready || !style.applyFrameToAllScenes) return;
+    style.applyFrameToAllScenes();
     setApplied(true);
     setTimeout(() => setApplied(false), 2000);
   };
 
   const [exporting, setExporting] = useState(false);
-  const handleExportPng = async () => {
+  const handleExportPng = async (frameId: FrameId) => {
     setExporting(true);
     try {
       await exportFrameAsPng(
@@ -67,29 +68,37 @@ export const FramesPanel: React.FC = () => {
     }
   };
 
+  if (!style.ready) {
+    return <EmptyTargetState message={style.message} linkTo={style.linkTo} linkLabel={style.linkLabel} />;
+  }
+
+  const frameId = style.frameId;
+
   return (
     <div className="flex flex-col gap-7">
-      {/* ── Scene selector ── */}
-      <Section title="Scenes">
-        <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1">
-          {scenes.map((scene, idx) => {
-            const isActive = scene.id === activeSceneId;
-            return (
-              <button
-                key={scene.id}
-                onClick={() => setActiveScene(scene.id)}
-                className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                  isActive
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
-                }`}
-              >
-                Scene {idx + 1}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
+      {/* ── Scene selector (manual mode only) ── */}
+      {style.mode === "manual" && scenes.length > 1 && (
+        <Section title="Scenes">
+          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1">
+            {scenes.map((scene, idx) => {
+              const isActive = scene.id === activeSceneId;
+              return (
+                <button
+                  key={scene.id}
+                  onClick={() => setActiveScene(scene.id)}
+                  className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
+                    isActive
+                      ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                      : "border-rim bg-surface text-muted hover:border-accent-purple"
+                  }`}
+                >
+                  Scene {idx + 1}
+                </button>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       {/* ── Frame picker ── */}
       <Section title="Frame">
@@ -99,7 +108,7 @@ export const FramesPanel: React.FC = () => {
             return (
               <button
                 key={frame.id}
-                onClick={() => setFrame(frame.id)}
+                onClick={() => style.setFrame(frame.id)}
                 className={`flex flex-col items-start gap-2 rounded-xl border px-3 py-3 text-left transition ${
                   active
                     ? "border-accent-purple/60 bg-accent-purple/10"
@@ -117,29 +126,30 @@ export const FramesPanel: React.FC = () => {
         </div>
       </Section>
 
-      {/* ── One-shot frame copy ── */}
-      <div className="space-y-1.5">
-        <button
-          onClick={handleApplyAll}
-          disabled={scenes.length <= 1}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {applied ? (
-            <>
-              <Check size={14} className="text-accent-purple" />
-              <span className="text-accent-purple">Applied</span>
-            </>
-          ) : (
-            <>
-              <Paintbrush size={14} />
-              Apply frame to all scenes
-            </>
-          )}
-        </button>
-        <p className="text-center text-[11px] leading-snug text-muted/70">
-          Copies this scene's frame to every other scene.
-        </p>
-      </div>
+      {/* ── One-shot frame copy (manual mode only) ── */}
+      {style.applyFrameToAllScenes && (
+        <div className="space-y-1.5">
+          <button
+            onClick={handleApplyAll}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
+          >
+            {applied ? (
+              <>
+                <Check size={14} className="text-accent-purple" />
+                <span className="text-accent-purple">Applied</span>
+              </>
+            ) : (
+              <>
+                <Paintbrush size={14} />
+                Apply frame to all scenes
+              </>
+            )}
+          </button>
+          <p className="text-center text-[11px] leading-snug text-muted/70">
+            Copies this scene's frame to every other scene.
+          </p>
+        </div>
+      )}
 
       {/* ── Green screen PNG export ── */}
       <div className="border-t border-rim pt-7">
@@ -149,7 +159,7 @@ export const FramesPanel: React.FC = () => {
               Download the frame with a green screen hole for DaVinci or CapCut compositing.
             </p>
             <button
-              onClick={handleExportPng}
+              onClick={() => handleExportPng(frameId)}
               disabled={frameId === "none" || exporting}
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
             >

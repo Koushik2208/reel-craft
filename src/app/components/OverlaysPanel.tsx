@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Check, Paintbrush } from "lucide-react";
 import { useStore } from "../store";
+import { useActiveStyle } from "../hooks/useActiveStyle";
+import { EmptyTargetState } from "./EmptyTargetState";
 import { OVERLAYS, type OverlayIntensity } from "../../overlays/types";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -13,51 +15,51 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 const INTENSITY_LEVELS: OverlayIntensity[] = ["low", "medium", "high"];
 
 export const OverlaysPanel: React.FC = () => {
-  const {
-    scenes,
-    activeSceneId,
-    setActiveScene,
-    toggleOverlay,
-    setOverlayIntensity,
-    applyOverlaysToAllScenes,
-  } = useStore();
-  const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
+  const { scenes, activeSceneId, setActiveScene } = useStore();
+  const style = useActiveStyle();
 
   const [applied, setApplied] = useState(false);
   const handleApplyAll = () => {
-    applyOverlaysToAllScenes(activeSceneId);
+    if (!style.ready || !style.applyOverlaysToAllScenes) return;
+    style.applyOverlaysToAllScenes();
     setApplied(true);
     setTimeout(() => setApplied(false), 2000);
   };
 
+  if (!style.ready) {
+    return <EmptyTargetState message={style.message} linkTo={style.linkTo} linkLabel={style.linkLabel} />;
+  }
+
   return (
     <div className="flex flex-col gap-7">
-      {/* ── Scene selector ── */}
-      <Section title="Scenes">
-        <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1">
-          {scenes.map((scene, idx) => {
-            const isActive = scene.id === activeSceneId;
-            return (
-              <button
-                key={scene.id}
-                onClick={() => setActiveScene(scene.id)}
-                className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                  isActive
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
-                }`}
-              >
-                Scene {idx + 1}
-              </button>
-            );
-          })}
-        </div>
-      </Section>
+      {/* ── Scene selector (manual mode only) ── */}
+      {style.mode === "manual" && scenes.length > 1 && (
+        <Section title="Scenes">
+          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1">
+            {scenes.map((scene, idx) => {
+              const isActive = scene.id === activeSceneId;
+              return (
+                <button
+                  key={scene.id}
+                  onClick={() => setActiveScene(scene.id)}
+                  className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
+                    isActive
+                      ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                      : "border-rim bg-surface text-muted hover:border-accent-purple"
+                  }`}
+                >
+                  Scene {idx + 1}
+                </button>
+              );
+            })}
+          </div>
+        </Section>
+      )}
 
       {/* ── Active overlays summary ── */}
-      {activeScene.overlays.length > 0 && (
+      {style.overlays.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {activeScene.overlays.map((o) => {
+          {style.overlays.map((o) => {
             const meta = OVERLAYS.find((m) => m.id === o.id);
             if (!meta) return null;
             return (
@@ -76,7 +78,7 @@ export const OverlaysPanel: React.FC = () => {
       <Section title="Overlays">
         <div className="grid grid-cols-2 gap-2.5">
           {OVERLAYS.map((overlay) => {
-            const activeOverlay = activeScene.overlays.find((o) => o.id === overlay.id);
+            const activeOverlay = style.overlays.find((o) => o.id === overlay.id);
             const active = !!activeOverlay;
             return (
               <div
@@ -88,7 +90,7 @@ export const OverlaysPanel: React.FC = () => {
                 }`}
               >
                 <button
-                  onClick={() => toggleOverlay(overlay.id)}
+                  onClick={() => style.toggleOverlay(overlay.id)}
                   className="flex w-full items-start justify-between gap-2 text-left"
                 >
                   <div>
@@ -105,7 +107,7 @@ export const OverlaysPanel: React.FC = () => {
                       return (
                         <button
                           key={level}
-                          onClick={() => setOverlayIntensity(overlay.id, level)}
+                          onClick={() => style.setOverlayIntensity(overlay.id, level)}
                           className={`flex-1 rounded-md py-1 text-[10px] font-medium capitalize transition ${
                             on
                               ? "border border-accent-purple/40 bg-accent-purple/20 text-zinc-100"
@@ -130,29 +132,30 @@ export const OverlaysPanel: React.FC = () => {
         </div>
       </Section>
 
-      {/* ── One-shot overlay copy ── */}
-      <div className="space-y-1.5">
-        <button
-          onClick={handleApplyAll}
-          disabled={scenes.length <= 1}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {applied ? (
-            <>
-              <Check size={14} className="text-accent-purple" />
-              <span className="text-accent-purple">Applied</span>
-            </>
-          ) : (
-            <>
-              <Paintbrush size={14} />
-              Apply overlays to all scenes
-            </>
-          )}
-        </button>
-        <p className="text-center text-[11px] leading-snug text-muted/70">
-          Copies this scene's overlays to every other scene.
-        </p>
-      </div>
+      {/* ── One-shot overlay copy (manual mode only) ── */}
+      {style.applyOverlaysToAllScenes && (
+        <div className="space-y-1.5">
+          <button
+            onClick={handleApplyAll}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
+          >
+            {applied ? (
+              <>
+                <Check size={14} className="text-accent-purple" />
+                <span className="text-accent-purple">Applied</span>
+              </>
+            ) : (
+              <>
+                <Paintbrush size={14} />
+                Apply overlays to all scenes
+              </>
+            )}
+          </button>
+          <p className="text-center text-[11px] leading-snug text-muted/70">
+            Copies this scene's overlays to every other scene.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
