@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IMAGE_EFFECT_IDS } from "./shared/imageEffects";
+import { TEXT_STYLE_IDS } from "./shared/textStyles";
 
 export const TEMPLATE_IDS = ["minimal", "cinematic", "imageCard"] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
@@ -17,6 +18,7 @@ export const videoPropsSchema = z.object({
   layerMode: z.enum(LAYER_MODES).default("full"),
   textColorOverride: z.string().nullable().default(null),
   imageEffect: z.enum(IMAGE_EFFECT_IDS).default("zoom-in"),
+  textStyle: z.enum(TEXT_STYLE_IDS).default("fade-elegant"),
 });
 
 export type VideoProps = z.infer<typeof videoPropsSchema>;

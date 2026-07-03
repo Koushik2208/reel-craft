@@ -18,7 +18,7 @@ export type LinkedCompositionProps = {
 
 // Mirrors VideoComposition's shape (template + frame + overlays), but the
 // template only ever supplies the background — captions come from
-// LinkedCaptions instead of the template's own WordReveal, so the template
+// LinkedCaptions instead of the template's own text rendering, so the template
 // is always driven with "background-only" or "greenscreen", never "full".
 export const LinkedComposition: React.FC<LinkedCompositionProps> = ({ linkedPair, finishes }) => {
   const { fps, durationInFrames } = useVideoConfig();
@@ -41,6 +41,7 @@ export const LinkedComposition: React.FC<LinkedCompositionProps> = ({ linkedPair
         layerMode={layerMode === "greenscreen" ? "greenscreen" : "background-only"}
         textColorOverride={linkedPair.textColorOverride}
         imageEffect={linkedPair.imageEffect ?? "zoom-in"}
+        textStyle={linkedPair.textStyle ?? "fade-elegant"}
       />
       {showCaptions && <LinkedCaptions linkedPair={linkedPair} />}
       {!skipFinishes && finishes?.vignette && <VignetteOverlay />}

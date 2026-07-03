@@ -3,6 +3,7 @@ import { TEMPLATES } from "../../templates/registry";
 import type { TemplateId, LayerMode } from "../../templates/schema";
 import type { Language } from "../../templates/shared/language";
 import type { ImageEffect } from "../../templates/shared/imageEffects";
+import type { TextStyle } from "../../templates/shared/textStyles";
 import type { FrameId } from "../../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../../overlays/types";
 import type { ActiveMotion, MotionConfig, MotionId } from "../../motion/types";
@@ -27,6 +28,9 @@ export type ActiveStyle =
       setLayerMode: (m: LayerMode) => void;
       setImageEffect: (e: ImageEffect) => void;
       applyImageEffectToAllScenes: (() => void) | null;
+      textStyle: TextStyle;
+      setTextStyle: (s: TextStyle) => void;
+      applyTextStyleToAllScenes: (() => void) | null;
       setFrame: (id: FrameId) => void;
       applyFrameToAllScenes: (() => void) | null;
       toggleOverlay: (id: OverlayId) => void;
@@ -85,6 +89,9 @@ export function useActiveStyle(): ActiveStyle {
       setLayerMode: (m) => store.updateLinkedPairStyle({ layerMode: m }),
       setImageEffect: (e) => store.updateLinkedPairStyle({ imageEffect: e }),
       applyImageEffectToAllScenes: null,
+      textStyle: pair.textStyle,
+      setTextStyle: (s) => store.updateLinkedPairStyle({ textStyle: s }),
+      applyTextStyleToAllScenes: null,
       setFrame: (id) => store.updateLinkedPairStyle({ frameId: id }),
       applyFrameToAllScenes: null,
       toggleOverlay: (id) => store.toggleLinkedOverlay(id),
@@ -127,6 +134,10 @@ export function useActiveStyle(): ActiveStyle {
     setImageEffect: store.setImageEffect,
     applyImageEffectToAllScenes:
       scenes.length > 1 ? () => store.applyImageEffectToAllScenes(scene.id) : null,
+    textStyle: scene.textStyle,
+    setTextStyle: store.setTextStyle,
+    applyTextStyleToAllScenes:
+      scenes.length > 1 ? () => store.applyTextStyleToAllScenes(scene.id) : null,
     setFrame: store.setFrame,
     applyFrameToAllScenes: scenes.length > 1 ? () => store.applyFrameToAllScenes(scene.id) : null,
     toggleOverlay: store.toggleOverlay,

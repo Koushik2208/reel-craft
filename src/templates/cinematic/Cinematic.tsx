@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
-import { WordReveal } from "../shared/WordReveal";
+import { TextStyleRenderer } from "../shared/TextStyleRenderer";
 import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
@@ -39,6 +39,7 @@ export const Cinematic: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
+  textStyle = "fade-elegant",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -55,7 +56,6 @@ export const Cinematic: React.FC<VideoProps> = ({
   const adjustment = backgroundSrc ? getContrastAdjustment(brightness) : { textColor: look.text, overlayOpacity: 1.0 };
   const textColor = textColorOverride ?? adjustment.textColor;
   const overlayColor = backgroundSrc ? applyOpacityMultiplier(look.overlay, adjustment.overlayOpacity) : look.overlay;
-  const lineHeight = language === "te" ? 1.2 : 1.1;
 
   const effectStyle = getImageEffectStyle(imageEffect, frame, durationInFrames);
   const fadeOut = interpolate(
@@ -106,15 +106,13 @@ export const Cinematic: React.FC<VideoProps> = ({
 
       {showText && (
         <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fadeOut }}>
-          <WordReveal
+          <TextStyleRenderer
             text={text}
+            textStyle={textStyle}
+            durationInFrames={durationInFrames}
             color={textColor}
             fontFamily={fonts.display}
             fontSize={56}
-            fontWeight={600}
-            lineHeight={lineHeight}
-            letterSpacing="-0.01em"
-            shadow
           />
         </AbsoluteFill>
       )}

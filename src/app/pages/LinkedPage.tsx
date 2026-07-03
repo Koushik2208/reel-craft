@@ -10,20 +10,12 @@ import {
   Wand2,
   Image as ImageIcon,
 } from "lucide-react";
-import { useStore, type CaptionStyle } from "../store";
+import { useStore } from "../store";
 import { ModeSwitcher } from "../components/ModeSwitcher";
 import { ProjectTitleInput } from "../components/ProjectTitleInput";
 import { parseSRT, srtEntriesToTranscript } from "../srtParser";
 
 const MAX_LINKED_SECONDS = 300;
-
-const CAPTION_STYLE_OPTIONS: { id: CaptionStyle; label: string }[] = [
-  { id: "fade", label: "Fade" },
-  { id: "pop", label: "Pop" },
-  { id: "typewriter", label: "Typewriter" },
-  { id: "highlight", label: "Highlight" },
-  { id: "slide-up", label: "Slide Up" },
-];
 
 const Section: React.FC<{ title: string; children: React.ReactNode; hint?: string }> = ({
   title,
@@ -308,35 +300,6 @@ export const LinkedPage: React.FC = () => {
             className="hidden"
             onChange={(e) => onBackgroundFile(e.target.files?.[0])}
           />
-        </Section>
-      </div>
-
-      {/* ── Caption style ── */}
-      <div className="border-t border-rim pt-7">
-        <Section title="Caption style">
-          <div className="grid grid-cols-5 gap-1.5">
-            {CAPTION_STYLE_OPTIONS.map((opt) => {
-              const active = (linkedPair?.captionStyle ?? "fade") === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => updateLinkedPairStyle({ captionStyle: opt.id })}
-                  className={`rounded-lg border px-1 py-2 text-center text-[10px] font-medium leading-tight transition ${
-                    active
-                      ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                      : "border-rim bg-surface text-muted hover:border-accent-purple"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-          {linkedPair?.captionStyle === "highlight" && linkedPair?.transcript?.kind !== "word" && (
-            <p className="text-[11px] leading-snug text-muted/70">
-              Highlight needs word-level timestamps — falls back to Fade for SRT transcripts.
-            </p>
-          )}
         </Section>
       </div>
 

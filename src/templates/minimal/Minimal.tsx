@@ -1,8 +1,9 @@
 import React from "react";
-import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { getFontsForLanguage } from "../shared/language";
 import { fraunces } from "../shared/fonts";
 import { getImageEffectStyle } from "../shared/imageEffects";
+import { TextStyleRenderer } from "../shared/TextStyleRenderer";
 import type { VideoProps } from "../schema";
 
 type Look = { bg: string; text: string; font: string; weight: number; tracking: string };
@@ -25,6 +26,7 @@ export const Minimal: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
+  textStyle = "fade-elegant",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -44,17 +46,6 @@ export const Minimal: React.FC<VideoProps> = ({
   };
 
   const look = LOOKS[variant] ?? LOOKS.ink;
-  const lineHeight = language === "te" ? 1.28 : 1.18;
-
-  const fadeIn = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: "clamp" });
-  const fadeOut = interpolate(
-    frame,
-    [durationInFrames - 22, durationInFrames - 4],
-    [1, 0],
-    { extrapolateLeft: "clamp" }
-  );
-  const rise = interpolate(frame, [0, 26], [22, 0], { extrapolateRight: "clamp" });
-  const opacity = Math.min(fadeIn, fadeOut);
 
   // Minimal has no background asset, so "background-only" has nothing to show.
   if (layerMode === "background-only") {
@@ -73,22 +64,14 @@ export const Minimal: React.FC<VideoProps> = ({
         }}
       />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-        <div
-          style={{
-            opacity,
-            transform: `translateY(${rise}px)`,
-            maxWidth: "80%",
-            textAlign: "center",
-            color: textColorOverride ?? look.text,
-            fontFamily: look.font,
-            fontWeight: look.weight,
-            fontSize: 52,
-            lineHeight,
-            letterSpacing: look.tracking,
-          }}
-        >
-          {text}
-        </div>
+        <TextStyleRenderer
+          text={text}
+          textStyle={textStyle}
+          durationInFrames={durationInFrames}
+          color={textColorOverride ?? look.text}
+          fontFamily={look.font}
+          fontSize={52}
+        />
       </AbsoluteFill>
     </AbsoluteFill>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { WordReveal } from "../shared/WordReveal";
+import { TextStyleRenderer } from "../shared/TextStyleRenderer";
 import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
@@ -28,6 +28,7 @@ export const ImageCard: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
+  textStyle = "fade-elegant",
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -85,10 +86,6 @@ export const ImageCard: React.FC<VideoProps> = ({
     { extrapolateLeft: "clamp" }
   );
 
-  const lineHeight = look.upper
-    ? (language === "te" ? 1.08 : 0.98)
-    : (language === "te" ? 1.24 : 1.14);
-
   const isGreenscreen = layerMode === "greenscreen";
   const showText = layerMode !== "background-only";
 
@@ -127,16 +124,13 @@ export const ImageCard: React.FC<VideoProps> = ({
             opacity: fadeOut,
           }}
         >
-          <WordReveal
-            text={text}
+          <TextStyleRenderer
+            text={look.upper ? text.toUpperCase() : text}
+            textStyle={textStyle}
+            durationInFrames={durationInFrames}
             color={textColor}
             fontFamily={look.font}
             fontSize={look.size}
-            fontWeight={look.weight}
-            uppercase={look.upper}
-            lineHeight={lineHeight}
-            letterSpacing={look.upper ? "0.01em" : "-0.02em"}
-            shadow
           />
         </AbsoluteFill>
       )}

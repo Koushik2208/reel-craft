@@ -32,6 +32,7 @@ function makeGeneratedScene(
     overlays: defaultScene.overlays ?? [],
     motion: defaultScene.motion ?? [],
     imageEffect: defaultScene.imageEffect ?? "zoom-in",
+    textStyle: defaultScene.textStyle ?? "fade-elegant",
   };
 }
 

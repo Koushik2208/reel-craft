@@ -22,6 +22,7 @@ import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
 import type { LayerMode, TemplateId } from "../../templates/schema";
 import { LANGUAGES } from "../../templates/shared/language";
 import { IMAGE_EFFECT_IDS, IMAGE_EFFECT_LABELS, type ImageEffect } from "../../templates/shared/imageEffects";
+import { TEXT_STYLE_IDS, TEXT_STYLE_LABELS } from "../../templates/shared/textStyles";
 
 const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "full", label: "Full" },
@@ -275,6 +276,28 @@ export const StylePage: React.FC = () => {
             )}
           </button>
         )}
+      </Section>
+
+      {/* ── Text Style ── */}
+      <Section title="Text Style">
+        <div className="grid grid-cols-2 gap-2">
+          {TEXT_STYLE_IDS.map((id) => {
+            const active = style.textStyle === id;
+            return (
+              <button
+                key={id}
+                onClick={() => style.setTextStyle(id)}
+                className={`rounded-xl border px-2.5 py-2.5 text-center text-[12px] font-medium transition ${
+                  active
+                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+                    : "border-rim bg-surface text-muted hover:border-accent-purple"
+                }`}
+              >
+                {TEXT_STYLE_LABELS[id]}
+              </button>
+            );
+          })}
+        </div>
       </Section>
 
       {/* ── Cinematic finishes (project-wide) ── */}

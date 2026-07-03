@@ -8,10 +8,12 @@ import { splitTextIntoScenes } from "../templates/shared/textSplit";
 import type { FrameId } from "../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../overlays/types";
 import type { ImageEffect } from "../templates/shared/imageEffects";
+import type { TextStyle } from "../templates/shared/textStyles";
+import { DEFAULT_TEXT_STYLE } from "../templates/shared/textStyles";
 import type { ActiveMotion, MotionConfig, MotionId } from "../motion/types";
 import { defaultMotionFor } from "../motion/types";
 
-export type { ImageEffect };
+export type { ImageEffect, TextStyle };
 
 export type Asset = { src: string; kind: "image" | "video"; name: string } | null;
 
@@ -29,9 +31,6 @@ export type ProjectAudio = {
 export type WordTimestamp = { word: string; startMs: number; endMs: number };
 
 export type TranscriptSource = "srt" | "whisper";
-
-// Mirrors the future Text Styles page's caption effect options.
-export type CaptionStyle = "fade" | "pop" | "typewriter" | "highlight" | "slide-up";
 
 export type TranscriptKind =
   | { kind: "block"; blocks: { text: string; startMs: number; endMs: number }[] }
@@ -67,9 +66,9 @@ export type LinkedPair = {
   frameId: FrameId;
   overlays: ActiveOverlay[];
   motion: ActiveMotion[];
-  captionStyle: CaptionStyle;
   layerMode: LayerMode;
   imageEffect: ImageEffect;
+  textStyle: TextStyle;
 } | null;
 
 export const MAX_LINKED_DURATION_SECONDS = 5 * 60;
@@ -97,9 +96,9 @@ function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullab
     frameId: "none",
     overlays: [],
     motion: [],
-    captionStyle: "fade",
     layerMode: "full",
     imageEffect: "zoom-in",
+    textStyle: DEFAULT_TEXT_STYLE,
     ...overrides,
   };
 }
@@ -128,6 +127,7 @@ export type Scene = {
   overlays: ActiveOverlay[];
   motion: ActiveMotion[];
   imageEffect: ImageEffect;
+  textStyle: TextStyle;
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -154,6 +154,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     overlays: [],
     motion: [],
     imageEffect: "zoom-in",
+    textStyle: DEFAULT_TEXT_STYLE,
     ...overrides,
   };
 }
@@ -185,9 +186,9 @@ type State = {
         | "frameId"
         | "overlays"
         | "motion"
-        | "captionStyle"
         | "layerMode"
         | "imageEffect"
+        | "textStyle"
       >
     >
   ) => void;
@@ -220,6 +221,7 @@ type State = {
   setTextColorOverride: (color: string | null) => void;
   setFrame: (id: FrameId) => void;
   setImageEffect: (effect: ImageEffect) => void;
+  setTextStyle: (style: TextStyle) => void;
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   toggleMotion: (id: MotionId) => void;
@@ -232,6 +234,7 @@ type State = {
   applyOverlaysToAllScenes: (sourceId: string) => void;
   applyMotionToAllScenes: (sourceId: string) => void;
   applyImageEffectToAllScenes: (sourceId: string) => void;
+  applyTextStyleToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
   setAudioFadeIn: (seconds: number) => void;
@@ -498,6 +501,9 @@ export const useStore = create<State>()(
       setImageEffect: (imageEffect) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { imageEffect }) })),
 
+      setTextStyle: (textStyle) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { textStyle }) })),
+
       toggleOverlay: (id) =>
         set((s) => {
           const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
@@ -620,6 +626,7 @@ export const useStore = create<State>()(
           variant: source.variant,
           asset: source.asset,
           layerMode: source.layerMode,
+          textStyle: source.textStyle,
         };
         set({ scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, ...style })) });
       },
@@ -661,24 +668,43 @@ export const useStore = create<State>()(
           ),
         });
       },
+
+      applyTextStyleToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) =>
+            s.id === sourceId ? s : { ...s, textStyle: source.textStyle }
+          ),
+        });
+      },
     }),
     {
       name: "reelcraft",
-      version: 2,
+      version: 3,
       // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
       // fields; backfill them so components can safely assume they're always set.
+      // Version 3 also replaces `linkedPair.captionStyle` with the unified
+      // `textStyle` field shared with `Scene` — old caption style values don't
+      // map onto the new text style ids, so they're dropped in favor of the default.
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
-          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect" | "motion"> & {
+          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect" | "motion" | "textStyle"> & {
             asset: null;
             overlays?: ActiveOverlay[];
             imageEffect?: ImageEffect;
             motion?: ActiveMotion[];
+            textStyle?: TextStyle;
           })[];
           linkedPair:
-            | (Omit<NonNullable<PersistedState["linkedPair"]>, "imageEffect" | "motion"> & {
+            | (Omit<
+                NonNullable<PersistedState["linkedPair"]>,
+                "imageEffect" | "motion" | "textStyle"
+              > & {
                 imageEffect?: ImageEffect;
                 motion?: ActiveMotion[];
+                textStyle?: TextStyle;
               })
             | null;
         };
@@ -689,12 +715,14 @@ export const useStore = create<State>()(
             overlays: s.overlays ?? [],
             imageEffect: s.imageEffect ?? "zoom-in",
             motion: s.motion ?? [],
+            textStyle: s.textStyle ?? DEFAULT_TEXT_STYLE,
           })),
           linkedPair: state.linkedPair
             ? {
                 ...state.linkedPair,
                 imageEffect: state.linkedPair.imageEffect ?? "zoom-in",
                 motion: state.linkedPair.motion ?? [],
+                textStyle: state.linkedPair.textStyle ?? DEFAULT_TEXT_STYLE,
               }
             : state.linkedPair,
         };

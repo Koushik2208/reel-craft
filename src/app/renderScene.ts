@@ -43,6 +43,7 @@ export function renderSceneToFile(
     overlays: scene.overlays ?? [],
     motion: scene.motion ?? [],
     imageEffect: scene.imageEffect ?? "zoom-in",
+    textStyle: scene.textStyle ?? "fade-elegant",
   };
 
   const promise = (async () => {
