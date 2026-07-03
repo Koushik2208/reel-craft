@@ -44,16 +44,7 @@ export const TvFrame: React.FC<TvFrameProps> = ({ children, width, height }) => 
             clipPath: `inset(0px round ${screenRadius}px)`,
           }}
         >
-          <div
-            style={{
-              width,
-              height,
-              transform: `scale(${screenWidth / width}, ${screenHeight / height})`,
-              transformOrigin: "top left",
-            }}
-          >
-            {children}
-          </div>
+          <AbsoluteFill>{children}</AbsoluteFill>
           <AbsoluteFill
             style={{
               pointerEvents: "none",

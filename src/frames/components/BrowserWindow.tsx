@@ -6,7 +6,6 @@ export type BrowserWindowProps = { children: React.ReactNode; width: number; hei
 // Top bar height anchored to a 1920px-tall reference (~60px).
 export const BrowserWindow: React.FC<BrowserWindowProps> = ({ children, width, height }) => {
   const barHeight = (height * 60) / 1920;
-  const contentHeight = height - barHeight;
   const dotSize = barHeight * 0.26;
 
   return (
@@ -55,16 +54,7 @@ export const BrowserWindow: React.FC<BrowserWindowProps> = ({ children, width, h
           clipPath: "inset(0px)",
         }}
       >
-        <div
-          style={{
-            width,
-            height,
-            transform: `scale(1, ${contentHeight / height})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {children}
-        </div>
+        <AbsoluteFill>{children}</AbsoluteFill>
       </div>
     </AbsoluteFill>
   );

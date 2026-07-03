@@ -1,18 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { Download, Loader2, Frame, Scan, SlidersHorizontal, X } from "lucide-react";
-import { useStore } from "../store";
+import { useStore, linkedDurationInFrames } from "../store";
 import { PreviewStage } from "./PreviewStage";
 import { NavSidebar } from "./NavSidebar";
 import { MobileExportBanner } from "./MobileExportBanner";
-import { renderToMp4, downloadBlob, type RenderHandle } from "../render";
+import { renderToMp4, renderLinkedToMp4, downloadBlob, titledFilename, type RenderHandle } from "../render";
 import { totalDurationInFrames } from "./SceneSeries";
 import { PreviewModeProvider, type PreviewMode } from "../PreviewContext";
 
 type Status = "idle" | "rendering" | "error";
 
 export const AppLayout: React.FC = () => {
-  const { scenes, audio, finishes } = useStore();
+  const { scenes, audio, finishes, projectMode, linkedPair, projectTitle } = useStore();
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,10 @@ export const AppLayout: React.FC = () => {
     ? "scene"
     : "full";
 
-  const hasContent = scenes.some((s) => s.text.trim().length > 0);
+  const hasContent =
+    projectMode === "linked"
+      ? !!linkedPair?.audio?.src
+      : scenes.some((s) => s.text.trim().length > 0);
 
   const render = useCallback(async () => {
     if (status === "rendering" || !hasContent) return;
@@ -32,6 +35,18 @@ export const AppLayout: React.FC = () => {
     setProgress(0);
     setError(null);
     try {
+      if (projectMode === "linked" && linkedPair) {
+        const total = linkedDurationInFrames(linkedPair);
+        const handle = renderLinkedToMp4({ linkedPair, finishes }, total, setProgress);
+        handleRef.current = handle;
+        const blob = await handle.promise;
+        downloadBlob(
+          blob,
+          titledFilename(projectTitle, "", "mp4", `reelcraft-linked-${Date.now()}.mp4`)
+        );
+        setStatus("idle");
+        return;
+      }
       const total = totalDurationInFrames(scenes);
       const handle = renderToMp4(
         { scenes, audio, finishes },
@@ -40,7 +55,7 @@ export const AppLayout: React.FC = () => {
       );
       handleRef.current = handle;
       const blob = await handle.promise;
-      downloadBlob(blob, `reelcraft-${Date.now()}.mp4`);
+      downloadBlob(blob, titledFilename(projectTitle, "", "mp4", `reelcraft-${Date.now()}.mp4`));
       setStatus("idle");
     } catch (e) {
       console.error(e);
@@ -50,7 +65,7 @@ export const AppLayout: React.FC = () => {
       );
       setStatus("error");
     }
-  }, [status, scenes, audio, finishes, hasContent]);
+  }, [status, scenes, audio, finishes, hasContent, projectMode, linkedPair, projectTitle]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Upload,
@@ -18,13 +18,17 @@ import {
   Minus,
   Download,
   Frame as FrameIcon,
+  FileText,
 } from "lucide-react";
 import { useStore, sceneDurationInFrames, type CinematicFinishes, type Scene } from "../store";
 import { TEMPLATES } from "../../templates/registry";
 import { FPS } from "../../templates/shared/timing";
 import { FRAMES } from "../../frames/types";
 import { renderSceneToFile } from "../renderScene";
-import { downloadBlob, getExportFormat } from "../render";
+import { downloadBlob, getExportFormat, titledFilename } from "../render";
+import { SrtImportModal } from "../components/SrtImportModal";
+import { ModeSwitcher } from "../components/ModeSwitcher";
+import { ProjectTitleInput } from "../components/ProjectTitleInput";
 
 const Section: React.FC<{ title: string; children: React.ReactNode; hint?: string }> = ({
   title,
@@ -47,6 +51,8 @@ export const SceneListPage: React.FC = () => {
     activeSceneId,
     audio,
     finishes,
+    projectMode,
+    projectTitle,
     addScene,
     duplicateScene,
     removeScene,
@@ -60,6 +66,8 @@ export const SceneListPage: React.FC = () => {
     clearAudio,
     setFinish,
   } = useStore();
+
+  const [srtModalOpen, setSrtModalOpen] = useState(false);
 
   const [styleApplied, setStyleApplied] = useState(false);
   const handleApplyStyle = () => {
@@ -80,7 +88,15 @@ export const SceneListPage: React.FC = () => {
       handle.promise
         .then((blob) => {
           const format = getExportFormat(scene.layerMode ?? "full");
-          downloadBlob(blob, `reelcraft-scene-${idx + 1}.${format.container}`);
+          downloadBlob(
+            blob,
+            titledFilename(
+              projectTitle,
+              `-scene-${idx + 1}`,
+              format.container,
+              `reelcraft-scene-${idx + 1}.${format.container}`
+            )
+          );
         })
         .catch((e) => {
           console.error(e);
@@ -93,7 +109,7 @@ export const SceneListPage: React.FC = () => {
           });
         });
     },
-    [finishes]
+    [finishes, projectTitle]
   );
 
   const audioFileRef = useRef<HTMLInputElement>(null);
@@ -110,19 +126,44 @@ export const SceneListPage: React.FC = () => {
     navigate(`/editor/scene/${id}`);
   };
 
+  useEffect(() => {
+    if (projectMode === "linked") {
+      navigate("/editor/linked", { replace: true });
+    }
+  }, [projectMode, navigate]);
+
+  if (projectMode === "linked") return null;
+
   return (
     <div className="flex flex-col gap-7">
+      {/* ── Project title ── */}
+      <ProjectTitleInput />
+
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-zinc-100">Scenes</h2>
-        <button
-          onClick={addScene}
-          className="flex items-center gap-1.5 rounded-lg border border-rim bg-surface px-2.5 py-1.5 text-[12px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-        >
-          <Plus size={13} />
-          Add scene
-        </button>
+        <ModeSwitcher />
       </div>
+      <div className="flex items-center justify-end">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSrtModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-rim bg-surface px-2.5 py-1.5 text-[12px] text-white transition hover:border-accent-purple hover:text-zinc-200"
+          >
+            <FileText size={13} />
+            Import SRT
+          </button>
+          <button
+            onClick={addScene}
+            className="flex items-center gap-1.5 rounded-lg border border-rim bg-surface px-2.5 py-1.5 text-[12px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
+          >
+            <Plus size={13} />
+            Add scene
+          </button>
+        </div>
+      </div>
+
+      {srtModalOpen && <SrtImportModal onClose={() => setSrtModalOpen(false)} />}
 
       {/* ── Scene list ── */}
       <div className="flex flex-col gap-2">

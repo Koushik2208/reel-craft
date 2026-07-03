@@ -129,8 +129,6 @@ export const ImageCard: React.FC<VideoProps> = ({
             uppercase={look.upper}
             lineHeight={lineHeight}
             letterSpacing={look.upper ? "0.01em" : "-0.02em"}
-            startAt={8}
-            spread={Math.max(20, durationInFrames - 60)}
             shadow
           />
         </AbsoluteFill>

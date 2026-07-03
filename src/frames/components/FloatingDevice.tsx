@@ -21,7 +21,6 @@ export const FloatingDevice: React.FC<FloatingDeviceProps> = ({
   const shellHeight = shellWidth * (height / width);
   const shellTop = height * 0.18;
   const shellLeft = (width - shellWidth) / 2;
-  const scale = shellWidth / width;
   const outerRadius = shellWidth * 0.08;
 
   return (
@@ -39,16 +38,7 @@ export const FloatingDevice: React.FC<FloatingDeviceProps> = ({
           boxShadow: "0 32px 120px rgba(0,0,0,0.25)",
         }}
       >
-        <div
-          style={{
-            width,
-            height,
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {children}
-        </div>
+        <AbsoluteFill>{children}</AbsoluteFill>
       </div>
     </AbsoluteFill>
   );

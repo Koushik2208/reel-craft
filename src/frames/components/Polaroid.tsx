@@ -1,4 +1,5 @@
 import React from "react";
+import { AbsoluteFill } from "remotion";
 
 export type PolaroidProps = { children: React.ReactNode; width: number; height: number };
 
@@ -31,16 +32,7 @@ export const Polaroid: React.FC<PolaroidProps> = ({ children, width, height }) =
           clipPath: "inset(0px)",
         }}
       >
-        <div
-          style={{
-            width,
-            height,
-            transform: `scale(${innerWidth / width}, ${innerHeight / height})`,
-            transformOrigin: "top left",
-          }}
-        >
-          {children}
-        </div>
+        <AbsoluteFill>{children}</AbsoluteFill>
       </div>
     </div>
   );

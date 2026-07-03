@@ -103,8 +103,6 @@ export const Cinematic: React.FC<VideoProps> = ({
             fontWeight={600}
             lineHeight={lineHeight}
             letterSpacing="-0.01em"
-            startAt={10}
-            spread={Math.max(24, durationInFrames - 60)}
             shadow
           />
         </AbsoluteFill>

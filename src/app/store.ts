@@ -21,6 +21,80 @@ export type ProjectAudio = {
   fadeOutSeconds: number;
 } | null;
 
+export type WordTimestamp = { word: string; startMs: number; endMs: number };
+
+export type TranscriptSource = "srt" | "whisper";
+
+// Mirrors the future Text Styles page's caption effect options.
+export type CaptionStyle = "fade" | "pop" | "typewriter" | "highlight" | "slide-up";
+
+export type TranscriptKind =
+  | { kind: "block"; blocks: { text: string; startMs: number; endMs: number }[] }
+  | { kind: "word"; words: WordTimestamp[] };
+
+// Linked mode's own audio, distinct from `ProjectAudio` (project-level
+// background music in manual mode). `src` goes null across reload the same
+// way `ProjectAudio.src` does, so the page can prompt to re-attach the file
+// while keeping name/trim/fade around.
+export type LinkedAudio = {
+  src: string | null;
+  name: string;
+  durationInSeconds: number;
+  trimStartSeconds: number;
+  fadeInSeconds: number;
+  fadeOutSeconds: number;
+};
+
+// Same shape as `Asset` but with a nullable `src` for the same re-attach-on-reload reason as `LinkedAudio`.
+export type LinkedBackground = { src: string | null; kind: "image" | "video"; name: string } | null;
+
+// `audio`/`transcript` start null so a transcript (or audio) can be uploaded
+// before its counterpart exists (see LinkedPage edge cases).
+export type LinkedPair = {
+  audio: LinkedAudio | null;
+  transcript: TranscriptKind | null;
+  transcriptSource: TranscriptSource | null;
+  background: LinkedBackground;
+  template: TemplateId;
+  variant: string;
+  language: Language;
+  textColorOverride: string | null;
+  frameId: FrameId;
+  overlays: ActiveOverlay[];
+  captionStyle: CaptionStyle;
+  layerMode: LayerMode;
+} | null;
+
+export const MAX_LINKED_DURATION_SECONDS = 5 * 60;
+
+export function linkedDurationInFrames(linkedPair: NonNullable<LinkedPair>): number {
+  if (!linkedPair.audio) return 0;
+  const effectiveSeconds = Math.max(
+    linkedPair.audio.durationInSeconds - linkedPair.audio.trimStartSeconds,
+    0
+  );
+  const cappedSeconds = Math.min(effectiveSeconds, MAX_LINKED_DURATION_SECONDS);
+  return Math.max(Math.round(cappedSeconds * FPS), 1);
+}
+
+function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullable<LinkedPair> {
+  return {
+    audio: null,
+    transcript: null,
+    transcriptSource: null,
+    background: null,
+    template: "minimal",
+    variant: TEMPLATES.minimal.defaultVariant,
+    language: "en",
+    textColorOverride: null,
+    frameId: "none",
+    overlays: [],
+    captionStyle: "fade",
+    layerMode: "full",
+    ...overrides,
+  };
+}
+
 function readAudioDuration(src: string): Promise<number> {
   return new Promise((resolve) => {
     const el = new Audio();
@@ -80,6 +154,38 @@ type State = {
   activeSceneId: string;
   audio: ProjectAudio;
   finishes: CinematicFinishes;
+  projectMode: "manual" | "linked";
+  linkedPair: LinkedPair;
+  projectTitle: string;
+  setProjectTitle: (title: string) => void;
+  setProjectMode: (mode: "manual" | "linked") => void;
+  setLinkedPair: (pair: LinkedPair) => void;
+  updateLinkedPairAudio: (partial: Partial<LinkedAudio>) => void;
+  updateLinkedPairStyle: (
+    partial: Partial<
+      Pick<
+        NonNullable<LinkedPair>,
+        | "template"
+        | "variant"
+        | "language"
+        | "textColorOverride"
+        | "frameId"
+        | "overlays"
+        | "captionStyle"
+        | "layerMode"
+      >
+    >
+  ) => void;
+  clearLinkedPair: () => void;
+  setLinkedAudio: (file: File) => Promise<void>;
+  setLinkedAudioTrim: (seconds: number) => void;
+  setLinkedAudioFadeIn: (seconds: number) => void;
+  setLinkedAudioFadeOut: (seconds: number) => void;
+  setLinkedTranscript: (transcript: TranscriptKind, source: TranscriptSource) => void;
+  setLinkedBackground: (asset: Asset) => void;
+  clearLinkedBackground: () => void;
+  toggleLinkedOverlay: (id: OverlayId) => void;
+  setLinkedOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   addScene: () => void;
   duplicateScene: (id: string) => void;
   removeScene: (id: string) => void;
@@ -99,6 +205,8 @@ type State = {
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   applyAutoSplit: (sceneId: string) => void;
+  replaceScenes: (scenes: Scene[]) => void;
+  appendScenes: (scenes: Scene[]) => void;
   applyStyleToAllScenes: (sourceId: string) => void;
   applyFrameToAllScenes: (sourceId: string) => void;
   applyOverlaysToAllScenes: (sourceId: string) => void;
@@ -115,6 +223,14 @@ type PersistedState = {
   activeSceneId: string;
   audio: ProjectAudio;
   finishes: CinematicFinishes;
+  projectMode: "manual" | "linked";
+  projectTitle: string;
+  linkedPair:
+    | (Omit<NonNullable<LinkedPair>, "audio" | "background"> & {
+        audio: Omit<LinkedAudio, "src"> & { src: null } | null;
+        background: Omit<NonNullable<LinkedBackground>, "src"> & { src: null } | null;
+      })
+    | null;
 };
 
 function patchActive(scenes: Scene[], activeId: string, patch: Partial<Scene>): Scene[] {
@@ -128,6 +244,128 @@ export const useStore = create<State>()(
       activeSceneId: DEFAULT_SCENE.id,
       audio: null,
       finishes: { grain: false, vignette: false, letterbox: false },
+      projectMode: "manual",
+      linkedPair: null,
+      projectTitle: "",
+
+      setProjectTitle: (title) => set({ projectTitle: title }),
+
+      setProjectMode: (mode) =>
+        set((s) => {
+          if (s.projectMode === mode) return {};
+          if (mode === "linked") {
+            const scene = makeScene();
+            return { projectMode: "linked", scenes: [scene], activeSceneId: scene.id };
+          }
+          if (s.linkedPair?.audio?.src) URL.revokeObjectURL(s.linkedPair.audio.src);
+          if (s.linkedPair?.background?.src) URL.revokeObjectURL(s.linkedPair.background.src);
+          return { projectMode: "manual", linkedPair: null };
+        }),
+
+      setLinkedPair: (pair) => set({ linkedPair: pair }),
+
+      updateLinkedPairAudio: (partial) =>
+        set((s) => {
+          if (!s.linkedPair?.audio) return {};
+          return { linkedPair: { ...s.linkedPair, audio: { ...s.linkedPair.audio, ...partial } } };
+        }),
+
+      updateLinkedPairStyle: (partial) =>
+        set((s) => {
+          if (!s.linkedPair) return {};
+          return { linkedPair: { ...s.linkedPair, ...partial } };
+        }),
+
+      clearLinkedPair: () => {
+        const { linkedPair } = get();
+        if (linkedPair?.audio?.src) URL.revokeObjectURL(linkedPair.audio.src);
+        if (linkedPair?.background?.src) URL.revokeObjectURL(linkedPair.background.src);
+        set({ linkedPair: null });
+      },
+
+      setLinkedAudio: async (file) => {
+        const prev = get().linkedPair?.audio;
+        if (prev?.src) URL.revokeObjectURL(prev.src);
+        const src = URL.createObjectURL(file);
+        const durationInSeconds = await readAudioDuration(src);
+        set((s) => {
+          const base = s.linkedPair ?? makeLinkedPair();
+          // Re-attaching (an `audio` entry already exists, e.g. after a
+          // reload stripped its src) should keep the user's trim/fade
+          // choices instead of resetting to defaults.
+          const existing = base.audio;
+          return {
+            linkedPair: {
+              ...base,
+              audio: {
+                src,
+                name: file.name,
+                durationInSeconds,
+                trimStartSeconds: Math.min(existing?.trimStartSeconds ?? 0, durationInSeconds),
+                fadeInSeconds: existing?.fadeInSeconds ?? 0.5,
+                fadeOutSeconds: existing?.fadeOutSeconds ?? 0.5,
+              },
+            },
+          };
+        });
+      },
+
+      setLinkedAudioTrim: (seconds) => {
+        const audio = get().linkedPair?.audio;
+        if (!audio) return;
+        get().updateLinkedPairAudio({
+          trimStartSeconds: Math.max(0, Math.min(seconds, audio.durationInSeconds)),
+        });
+      },
+
+      setLinkedAudioFadeIn: (seconds) => {
+        if (!get().linkedPair?.audio) return;
+        get().updateLinkedPairAudio({ fadeInSeconds: Math.max(0, Math.min(seconds, 5)) });
+      },
+
+      setLinkedAudioFadeOut: (seconds) => {
+        if (!get().linkedPair?.audio) return;
+        get().updateLinkedPairAudio({ fadeOutSeconds: Math.max(0, Math.min(seconds, 5)) });
+      },
+
+      setLinkedTranscript: (transcript, transcriptSource) =>
+        set((s) => {
+          const base = s.linkedPair ?? makeLinkedPair();
+          return { linkedPair: { ...base, transcript, transcriptSource } };
+        }),
+
+      setLinkedBackground: (asset) =>
+        set((s) => {
+          const prev = s.linkedPair?.background;
+          if (prev?.src) URL.revokeObjectURL(prev.src);
+          const base = s.linkedPair ?? makeLinkedPair();
+          return { linkedPair: { ...base, background: asset } };
+        }),
+
+      clearLinkedBackground: () =>
+        set((s) => {
+          const prev = s.linkedPair?.background;
+          if (prev?.src) URL.revokeObjectURL(prev.src);
+          if (!s.linkedPair) return {};
+          return { linkedPair: { ...s.linkedPair, background: null } };
+        }),
+
+      toggleLinkedOverlay: (id) =>
+        set((s) => {
+          if (!s.linkedPair) return {};
+          const exists = s.linkedPair.overlays.some((o) => o.id === id);
+          const overlays = exists
+            ? s.linkedPair.overlays.filter((o) => o.id !== id)
+            : [...s.linkedPair.overlays, { id, intensity: "medium" as OverlayIntensity }];
+          return { linkedPair: { ...s.linkedPair, overlays } };
+        }),
+
+      setLinkedOverlayIntensity: (id, intensity) =>
+        set((s) => {
+          if (!s.linkedPair) return {};
+          const overlays = s.linkedPair.overlays.map((o) => (o.id === id ? { ...o, intensity } : o));
+          return { linkedPair: { ...s.linkedPair, overlays } };
+        }),
 
       addScene: () => {
         const scene = makeScene({ text: "Type your next scene here." });
@@ -256,6 +494,16 @@ export const useStore = create<State>()(
         set({ scenes: next, activeSceneId: newScenes[0].id });
       },
 
+      replaceScenes: (scenes) => {
+        if (scenes.length === 0) return;
+        set({ scenes, activeSceneId: scenes[0].id });
+      },
+
+      appendScenes: (scenes) => {
+        if (scenes.length === 0) return;
+        set((s) => ({ scenes: [...s.scenes, ...scenes] }));
+      },
+
       setAudio: async (file) => {
         const prev = get().audio;
         if (prev?.src) URL.revokeObjectURL(prev.src);
@@ -351,6 +599,17 @@ export const useStore = create<State>()(
         activeSceneId: s.activeSceneId,
         audio: s.audio ? { ...s.audio, src: null } : null,
         finishes: s.finishes,
+        projectMode: s.projectMode,
+        projectTitle: s.projectTitle,
+        linkedPair: s.linkedPair
+          ? {
+              ...s.linkedPair,
+              audio: s.linkedPair.audio ? { ...s.linkedPair.audio, src: null } : null,
+              background: s.linkedPair.background
+                ? { ...s.linkedPair.background, src: null }
+                : null,
+            }
+          : null,
       }),
     }
   )

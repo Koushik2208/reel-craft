@@ -3,6 +3,7 @@ import { Check, Download, Loader2, Paintbrush } from "lucide-react";
 import { useStore } from "../store";
 import { FRAMES, type FrameId } from "../../frames/types";
 import { exportFrameAsPng } from "../../frames/exportFramePng";
+import { titledFilename } from "../render";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="space-y-2.5">
@@ -39,7 +40,8 @@ const FramePreview: React.FC<{ id: FrameId }> = ({ id }) => {
 };
 
 export const FramesPanel: React.FC = () => {
-  const { scenes, activeSceneId, setActiveScene, setFrame, applyFrameToAllScenes } = useStore();
+  const { scenes, activeSceneId, setActiveScene, setFrame, applyFrameToAllScenes, projectTitle } =
+    useStore();
   const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
   const frameId: FrameId = activeScene.frameId ?? "none";
 
@@ -54,7 +56,10 @@ export const FramesPanel: React.FC = () => {
   const handleExportPng = async () => {
     setExporting(true);
     try {
-      await exportFrameAsPng(frameId, "reelcraft-frame.png");
+      await exportFrameAsPng(
+        frameId,
+        titledFilename(projectTitle, "-frame", "png", "reelcraft-frame.png")
+      );
     } catch (e) {
       console.error(e);
     } finally {

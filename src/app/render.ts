@@ -1,5 +1,6 @@
 import { renderMediaOnWeb, getEncodableAudioCodecs } from "@remotion/web-renderer";
 import { SceneSeries, type SceneSeriesProps } from "./components/SceneSeries";
+import { LinkedComposition, type LinkedCompositionProps } from "./components/LinkedComposition";
 import { FPS, WIDTH, HEIGHT } from "../templates/shared/timing";
 import type { LayerMode } from "../templates/schema";
 
@@ -71,6 +72,73 @@ export function renderToMp4(
   })();
 
   return { promise, cancel: () => controller.abort() };
+}
+
+// Same as renderToMp4 but points the web renderer at the linked-mode
+// continuous composition instead of the manual-mode scene series.
+export function renderLinkedToMp4(
+  props: LinkedCompositionProps,
+  durationInFrames: number,
+  onProgress: (p: number) => void
+): RenderHandle {
+  const controller = new AbortController();
+
+  const promise = (async () => {
+    const encodableAudio = await getEncodableAudioCodecs("mp4");
+    const preferredOrder = ["aac", "opus", "mp3", "flac", "pcm-s16"] as const;
+    const audioCodec =
+      preferredOrder.find((c) => encodableAudio.includes(c)) ?? encodableAudio[0] ?? null;
+
+    const { getBlob } = await renderMediaOnWeb({
+      composition: {
+        id: "linked-video",
+        component: LinkedComposition,
+        durationInFrames,
+        fps: FPS,
+        width: WIDTH,
+        height: HEIGHT,
+        defaultProps: props,
+      },
+      inputProps: props,
+      container: "mp4",
+      videoCodec: "h264",
+      videoBitrate: "high",
+      audioCodec: audioCodec ?? null,
+      muted: audioCodec === null,
+      allowHtmlInCanvas: true,
+      signal: controller.signal,
+      onProgress: ({ progress }) => onProgress(progress),
+    });
+    return await getBlob();
+  })();
+
+  return { promise, cancel: () => controller.abort() };
+}
+
+// Lowercases, turns whitespace into dashes, and strips anything that isn't
+// alphanumeric or a dash (this covers the filesystem-invalid characters
+// / \ : * ? " < > | and control chars, plus punctuation like "!" that's
+// technically valid but not something we want in a generated filename).
+export function sanitizeFilenameTitle(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+// Builds "<sanitized-title><suffix>.<extension>", falling back to `fallback`
+// when the title is blank or sanitizes away to nothing.
+export function titledFilename(
+  projectTitle: string,
+  suffix: string,
+  extension: string,
+  fallback: string
+): string {
+  const sanitized = sanitizeFilenameTitle(projectTitle);
+  return sanitized ? `${sanitized}${suffix}.${extension}` : fallback;
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

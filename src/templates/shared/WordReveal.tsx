@@ -9,16 +9,20 @@ type Props = {
   fontWeight?: number;
   lineHeight?: number;
   letterSpacing?: string;
-  /** frame the reveal starts on */
+  /** frame the reveal starts on; defaults to 0 (start immediately) */
   startAt?: number;
-  /** how many frames the whole reveal should span */
+  /** how many frames the whole reveal should span; defaults to the full scene duration */
   spread?: number;
   shadow?: boolean;
   uppercase?: boolean;
 };
 
+const FADE_BUFFER_RATIO = 0.08;
+
 // Reveals text one word at a time: each word springs up and fades in,
-// staggered evenly across `spread` frames starting at `startAt`.
+// staggered evenly across `spread` frames starting at `startAt`. Both
+// default to the scene's full durationInFrames so timing scales with
+// scene length instead of using fixed frame offsets.
 export const WordReveal: React.FC<Props> = ({
   text,
   color,
@@ -27,15 +31,18 @@ export const WordReveal: React.FC<Props> = ({
   fontWeight = 600,
   lineHeight = 1.12,
   letterSpacing = "-0.02em",
-  startAt = 0,
-  spread = 30,
+  startAt,
+  spread,
   shadow = false,
   uppercase = false,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
   const words = text.trim().split(/\s+/).filter(Boolean);
-  const per = words.length > 1 ? spread / words.length : 0;
+  const resolvedStartAt = startAt ?? 0;
+  const resolvedSpread = spread ?? Math.max(1, durationInFrames - resolvedStartAt);
+  const per = words.length > 1 ? resolvedSpread / words.length : 0;
+  const fadeBuffer = Math.max(1, resolvedSpread * FADE_BUFFER_RATIO);
 
   return (
     <div
@@ -49,10 +56,10 @@ export const WordReveal: React.FC<Props> = ({
       }}
     >
       {words.map((word, i) => {
-        const local = frame - startAt - i * per;
+        const local = frame - resolvedStartAt - i * per;
         const enter = spring({ frame: local, fps, config: { damping: 200, mass: 0.7 } });
         const y = interpolate(enter, [0, 1], [fontSize * 0.5, 0]);
-        const opacity = interpolate(local, [0, per + 6], [0, 1], {
+        const opacity = interpolate(local, [0, per + fadeBuffer], [0, 1], {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
