@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { Video } from "@remotion/media";
 import { TextStyleRenderer } from "../shared/TextStyleRenderer";
+import { resolveTextStyleProps } from "../shared/textStyles";
 import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
@@ -39,7 +40,11 @@ export const Cinematic: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
-  textStyle = "fade-elegant",
+  textStyle = "editorial",
+  fontOverride = null,
+  fontWeightOverride = null,
+  fontSizeOverride = null,
+  captionPosition = null,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -67,6 +72,16 @@ export const Cinematic: React.FC<VideoProps> = ({
 
   const isGreenscreen = layerMode === "greenscreen";
   const showText = layerMode !== "background-only";
+
+  const resolved = resolveTextStyleProps(textStyle, {
+    fontOverride,
+    fontWeightOverride,
+    fontSizeOverride,
+    captionPosition,
+  });
+  // Language takes priority over the style's default font, but not over an
+  // explicit user font override.
+  const fontFamily = language === "te" && fontOverride === null ? fonts.display : resolved.fontFamily;
 
   return (
     <AbsoluteFill style={{ backgroundColor: isGreenscreen ? "#00FF00" : "#000" }}>
@@ -105,14 +120,20 @@ export const Cinematic: React.FC<VideoProps> = ({
       )}
 
       {showText && (
-        <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: fadeOut }}>
+        <AbsoluteFill style={{ opacity: fadeOut }}>
           <TextStyleRenderer
             text={text}
             textStyle={textStyle}
             durationInFrames={durationInFrames}
             color={textColor}
-            fontFamily={fonts.display}
-            fontSize={56}
+            fontFamily={fontFamily}
+            fontWeight={resolved.fontWeight}
+            fontSize={resolved.fontSize}
+            letterSpacing={resolved.letterSpacing}
+            wordSpacing={resolved.wordSpacing}
+            textTransform={resolved.textTransform}
+            opacity={resolved.opacity}
+            captionPosition={resolved.captionPosition}
           />
         </AbsoluteFill>
       )}

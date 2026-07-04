@@ -96,7 +96,11 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
       overlays: activeScene.overlays ?? [],
       motion: activeScene.motion ?? [],
       imageEffect: activeScene.imageEffect ?? "zoom-in",
-      textStyle: activeScene.textStyle ?? "fade-elegant",
+      textStyle: activeScene.textStyle ?? "editorial",
+      fontOverride: activeScene.fontOverride ?? null,
+      fontWeightOverride: activeScene.fontWeightOverride ?? null,
+      fontSizeOverride: activeScene.fontSizeOverride ?? null,
+      captionPosition: activeScene.captionPosition ?? null,
     }),
     [activeScene]
   );

@@ -32,7 +32,11 @@ function makeGeneratedScene(
     overlays: defaultScene.overlays ?? [],
     motion: defaultScene.motion ?? [],
     imageEffect: defaultScene.imageEffect ?? "zoom-in",
-    textStyle: defaultScene.textStyle ?? "fade-elegant",
+    textStyle: defaultScene.textStyle ?? "editorial",
+    fontOverride: defaultScene.fontOverride ?? null,
+    fontWeightOverride: defaultScene.fontWeightOverride ?? null,
+    fontSizeOverride: defaultScene.fontSizeOverride ?? null,
+    captionPosition: defaultScene.captionPosition ?? null,
   };
 }
 

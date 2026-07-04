@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { TextStyleRenderer } from "../shared/TextStyleRenderer";
+import { resolveTextStyleProps } from "../shared/textStyles";
 import { getFontsForLanguage } from "../shared/language";
 import type { VideoProps } from "../schema";
 import { sampleBackgroundBrightness } from "../shared/sampleBrightness";
 import { getContrastAdjustment } from "../shared/autoContrast";
 import { getImageEffectStyle } from "../shared/imageEffects";
 
-type Look = { text: string; font: string; size: number; weight: number; upper: boolean; scrim: string };
+type Look = { text: string; upper: boolean; scrim: string };
 
 export const imageCardVariants = [
   { id: "frost",    label: "Frost",    colors: { bg: "#060609", text: "#FFFFFF"  } },
@@ -28,7 +29,11 @@ export const ImageCard: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
-  textStyle = "fade-elegant",
+  textStyle = "editorial",
+  fontOverride = null,
+  fontWeightOverride = null,
+  fontSizeOverride = null,
+  captionPosition = null,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
@@ -37,31 +42,31 @@ export const ImageCard: React.FC<VideoProps> = ({
 
   const LOOKS: Record<string, Look> = {
     frost: {
-      text: "#FFFFFF",  font: fonts.primary, size: 52,  weight: 600, upper: false,
+      text: "#FFFFFF", upper: false,
       scrim: "linear-gradient(to top, rgba(6,6,9,0.92) 6%, rgba(6,6,9,0.35) 42%, rgba(6,6,9,0) 70%)",
     },
     warm: {
-      text: "#FFF3E6",  font: fonts.primary, size: 52,  weight: 600, upper: false,
+      text: "#FFF3E6", upper: false,
       scrim: "linear-gradient(to top, rgba(24,10,2,0.92) 6%, rgba(24,10,2,0.35) 42%, rgba(24,10,2,0) 70%)",
     },
     bold: {
-      text: "#FFFFFF",  font: fonts.bold,    size: 88,  weight: 400, upper: true,
+      text: "#FFFFFF", upper: true,
       scrim: "linear-gradient(to top, rgba(0,0,0,0.94) 8%, rgba(0,0,0,0.45) 46%, rgba(0,0,0,0) 72%)",
     },
     midnight: {
-      text: "#E8E0FF",  font: fonts.display, size: 52,  weight: 500, upper: false,
+      text: "#E8E0FF", upper: false,
       scrim: "linear-gradient(to top, rgba(8,4,24,0.94) 6%, rgba(8,4,24,0.40) 44%, rgba(8,4,24,0) 72%)",
     },
     ember: {
-      text: "#FFE4C0",  font: fonts.primary, size: 52,  weight: 600, upper: false,
+      text: "#FFE4C0", upper: false,
       scrim: "linear-gradient(to top, rgba(28,8,0,0.94) 6%, rgba(28,8,0,0.40) 44%, rgba(28,8,0,0) 72%)",
     },
     steel: {
-      text: "#E0EEFF",  font: fonts.primary, size: 52,  weight: 600, upper: false,
+      text: "#E0EEFF", upper: false,
       scrim: "linear-gradient(to top, rgba(4,12,24,0.94) 6%, rgba(4,12,24,0.40) 44%, rgba(4,12,24,0) 72%)",
     },
     verdant: {
-      text: "#C8FFD8",  font: fonts.primary, size: 52,  weight: 600, upper: false,
+      text: "#C8FFD8", upper: false,
       scrim: "linear-gradient(to top, rgba(2,16,8,0.94) 6%, rgba(2,16,8,0.40) 44%, rgba(2,16,8,0) 72%)",
     },
   };
@@ -88,6 +93,16 @@ export const ImageCard: React.FC<VideoProps> = ({
 
   const isGreenscreen = layerMode === "greenscreen";
   const showText = layerMode !== "background-only";
+
+  const resolved = resolveTextStyleProps(textStyle, {
+    fontOverride,
+    fontWeightOverride,
+    fontSizeOverride,
+    captionPosition,
+  });
+  // Language takes priority over the style's default font, but not over an
+  // explicit user font override.
+  const fontFamily = language === "te" && fontOverride === null ? fonts.display : resolved.fontFamily;
 
   return (
     <AbsoluteFill style={{ backgroundColor: isGreenscreen ? "#00FF00" : "#0b0b10" }}>
@@ -116,21 +131,20 @@ export const ImageCard: React.FC<VideoProps> = ({
       )}
 
       {showText && (
-        <AbsoluteFill
-          style={{
-            justifyContent: "flex-end",
-            alignItems: "center",
-            paddingBottom: 320,
-            opacity: fadeOut,
-          }}
-        >
+        <AbsoluteFill style={{ opacity: fadeOut }}>
           <TextStyleRenderer
             text={look.upper ? text.toUpperCase() : text}
             textStyle={textStyle}
             durationInFrames={durationInFrames}
             color={textColor}
-            fontFamily={look.font}
-            fontSize={look.size}
+            fontFamily={fontFamily}
+            fontWeight={resolved.fontWeight}
+            fontSize={resolved.fontSize}
+            letterSpacing={resolved.letterSpacing}
+            wordSpacing={resolved.wordSpacing}
+            textTransform={resolved.textTransform}
+            opacity={resolved.opacity}
+            captionPosition={resolved.captionPosition}
           />
         </AbsoluteFill>
       )}

@@ -36,7 +36,11 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
                 overlays={scene.overlays ?? []}
                 motion={scene.motion ?? []}
                 imageEffect={scene.imageEffect ?? "zoom-in"}
-                textStyle={scene.textStyle ?? "fade-elegant"}
+                textStyle={scene.textStyle ?? "editorial"}
+                fontOverride={scene.fontOverride ?? null}
+                fontWeightOverride={scene.fontWeightOverride ?? null}
+                fontSizeOverride={scene.fontSizeOverride ?? null}
+                captionPosition={scene.captionPosition ?? null}
               >
                 {!skipFinishes && finishes?.vignette && <VignetteOverlay />}
                 {!skipFinishes && finishes?.grain && <GrainOverlay />}

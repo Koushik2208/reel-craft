@@ -8,8 +8,8 @@ import { splitTextIntoScenes } from "../templates/shared/textSplit";
 import type { FrameId } from "../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../overlays/types";
 import type { ImageEffect } from "../templates/shared/imageEffects";
-import type { TextStyle } from "../templates/shared/textStyles";
-import { DEFAULT_TEXT_STYLE } from "../templates/shared/textStyles";
+import type { CaptionPosition, TextStyle } from "../templates/shared/textStyles";
+import { DEFAULT_TEXT_STYLE, TEXT_STYLE_IDS } from "../templates/shared/textStyles";
 import type { ActiveMotion, MotionConfig, MotionId } from "../motion/types";
 import { defaultMotionFor } from "../motion/types";
 
@@ -69,6 +69,10 @@ export type LinkedPair = {
   layerMode: LayerMode;
   imageEffect: ImageEffect;
   textStyle: TextStyle;
+  fontOverride: string | null;
+  fontWeightOverride: number | null;
+  fontSizeOverride: number | null;
+  captionPosition: CaptionPosition | null;
 } | null;
 
 export const MAX_LINKED_DURATION_SECONDS = 5 * 60;
@@ -99,6 +103,10 @@ function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullab
     layerMode: "full",
     imageEffect: "zoom-in",
     textStyle: DEFAULT_TEXT_STYLE,
+    fontOverride: null,
+    fontWeightOverride: null,
+    fontSizeOverride: null,
+    captionPosition: null,
     ...overrides,
   };
 }
@@ -128,6 +136,10 @@ export type Scene = {
   motion: ActiveMotion[];
   imageEffect: ImageEffect;
   textStyle: TextStyle;
+  fontOverride: string | null;
+  fontWeightOverride: number | null;
+  fontSizeOverride: number | null;
+  captionPosition: CaptionPosition | null;
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -155,6 +167,10 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     motion: [],
     imageEffect: "zoom-in",
     textStyle: DEFAULT_TEXT_STYLE,
+    fontOverride: null,
+    fontWeightOverride: null,
+    fontSizeOverride: null,
+    captionPosition: null,
     ...overrides,
   };
 }
@@ -189,6 +205,10 @@ type State = {
         | "layerMode"
         | "imageEffect"
         | "textStyle"
+        | "fontOverride"
+        | "fontWeightOverride"
+        | "fontSizeOverride"
+        | "captionPosition"
       >
     >
   ) => void;
@@ -222,6 +242,10 @@ type State = {
   setFrame: (id: FrameId) => void;
   setImageEffect: (effect: ImageEffect) => void;
   setTextStyle: (style: TextStyle) => void;
+  setFontOverride: (font: string | null) => void;
+  setFontWeightOverride: (weight: number | null) => void;
+  setFontSizeOverride: (size: number | null) => void;
+  setCaptionPosition: (position: CaptionPosition | null) => void;
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   toggleMotion: (id: MotionId) => void;
@@ -504,6 +528,18 @@ export const useStore = create<State>()(
       setTextStyle: (textStyle) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { textStyle }) })),
 
+      setFontOverride: (fontOverride) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { fontOverride }) })),
+
+      setFontWeightOverride: (fontWeightOverride) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { fontWeightOverride }) })),
+
+      setFontSizeOverride: (fontSizeOverride) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { fontSizeOverride }) })),
+
+      setCaptionPosition: (captionPosition) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { captionPosition }) })),
+
       toggleOverlay: (id) =>
         set((s) => {
           const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
@@ -627,6 +663,10 @@ export const useStore = create<State>()(
           asset: source.asset,
           layerMode: source.layerMode,
           textStyle: source.textStyle,
+          fontOverride: source.fontOverride,
+          fontWeightOverride: source.fontWeightOverride,
+          fontSizeOverride: source.fontSizeOverride,
+          captionPosition: source.captionPosition,
         };
         set({ scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, ...style })) });
       },
@@ -675,39 +715,66 @@ export const useStore = create<State>()(
         if (!source) return;
         set({
           scenes: scenes.map((s) =>
-            s.id === sourceId ? s : { ...s, textStyle: source.textStyle }
+            s.id === sourceId
+              ? s
+              : {
+                  ...s,
+                  textStyle: source.textStyle,
+                  fontOverride: source.fontOverride,
+                  fontWeightOverride: source.fontWeightOverride,
+                  fontSizeOverride: source.fontSizeOverride,
+                  captionPosition: source.captionPosition,
+                }
           ),
         });
       },
     }),
     {
       name: "reelcraft",
-      version: 3,
+      version: 4,
       // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
       // fields; backfill them so components can safely assume they're always set.
       // Version 3 also replaces `linkedPair.captionStyle` with the unified
       // `textStyle` field shared with `Scene` — old caption style values don't
       // map onto the new text style ids, so they're dropped in favor of the default.
+      // Version 4 replaces the 8 animation-named text style ids with 12
+      // opinionated typographic identities, and adds the font/size/position
+      // override fields — old ids don't exist anymore so they fall back to
+      // the default, and the new override fields backfill to null (auto).
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
-          scenes: (Omit<Scene, "asset" | "overlays" | "imageEffect" | "motion" | "textStyle"> & {
+          scenes: (Omit<
+            Scene,
+            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition"
+          > & {
             asset: null;
             overlays?: ActiveOverlay[];
             imageEffect?: ImageEffect;
             motion?: ActiveMotion[];
-            textStyle?: TextStyle;
+            textStyle?: string;
+            fontOverride?: string | null;
+            fontWeightOverride?: number | null;
+            fontSizeOverride?: number | null;
+            captionPosition?: CaptionPosition | null;
           })[];
           linkedPair:
             | (Omit<
                 NonNullable<PersistedState["linkedPair"]>,
-                "imageEffect" | "motion" | "textStyle"
+                "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition"
               > & {
                 imageEffect?: ImageEffect;
                 motion?: ActiveMotion[];
-                textStyle?: TextStyle;
+                textStyle?: string;
+                fontOverride?: string | null;
+                fontWeightOverride?: number | null;
+                fontSizeOverride?: number | null;
+                captionPosition?: CaptionPosition | null;
               })
             | null;
         };
+        const validTextStyleIds: readonly string[] = TEXT_STYLE_IDS;
+        const normalizeTextStyle = (t: string | undefined): TextStyle =>
+          t && validTextStyleIds.includes(t) ? (t as TextStyle) : DEFAULT_TEXT_STYLE;
         return {
           ...state,
           scenes: state.scenes.map((s) => ({
@@ -715,14 +782,22 @@ export const useStore = create<State>()(
             overlays: s.overlays ?? [],
             imageEffect: s.imageEffect ?? "zoom-in",
             motion: s.motion ?? [],
-            textStyle: s.textStyle ?? DEFAULT_TEXT_STYLE,
+            textStyle: normalizeTextStyle(s.textStyle),
+            fontOverride: s.fontOverride ?? null,
+            fontWeightOverride: s.fontWeightOverride ?? null,
+            fontSizeOverride: s.fontSizeOverride ?? null,
+            captionPosition: s.captionPosition ?? null,
           })),
           linkedPair: state.linkedPair
             ? {
                 ...state.linkedPair,
                 imageEffect: state.linkedPair.imageEffect ?? "zoom-in",
                 motion: state.linkedPair.motion ?? [],
-                textStyle: state.linkedPair.textStyle ?? DEFAULT_TEXT_STYLE,
+                textStyle: normalizeTextStyle(state.linkedPair.textStyle),
+                fontOverride: state.linkedPair.fontOverride ?? null,
+                fontWeightOverride: state.linkedPair.fontWeightOverride ?? null,
+                fontSizeOverride: state.linkedPair.fontSizeOverride ?? null,
+                captionPosition: state.linkedPair.captionPosition ?? null,
               }
             : state.linkedPair,
         };

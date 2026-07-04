@@ -22,7 +22,7 @@ import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
 import type { LayerMode, TemplateId } from "../../templates/schema";
 import { LANGUAGES } from "../../templates/shared/language";
 import { IMAGE_EFFECT_IDS, IMAGE_EFFECT_LABELS, type ImageEffect } from "../../templates/shared/imageEffects";
-import { TEXT_STYLE_IDS, TEXT_STYLE_LABELS } from "../../templates/shared/textStyles";
+import { FONT_SUPPORTED_WEIGHTS, STYLE_FONTS, TEXT_STYLES, type CaptionPosition } from "../../templates/shared/textStyles";
 
 const LAYER_MODE_OPTIONS: { id: LayerMode; label: string }[] = [
   { id: "full", label: "Full" },
@@ -50,6 +50,29 @@ const IMAGE_EFFECT_OPTIONS = IMAGE_EFFECT_IDS.map((id) => ({
   icon: IMAGE_EFFECT_ICONS[id],
 }));
 
+const FONT_WEIGHT_OPTIONS: { label: string; value: number | null }[] = [
+  { label: "Auto", value: null },
+  { label: "Light", value: 300 },
+  { label: "Regular", value: 400 },
+  { label: "Bold", value: 700 },
+  { label: "Black", value: 900 },
+];
+
+const FONT_SIZE_OPTIONS: { label: string; value: number | null }[] = [
+  { label: "Auto", value: null },
+  { label: "S", value: 36 },
+  { label: "M", value: 48 },
+  { label: "L", value: 64 },
+  { label: "XL", value: 88 },
+];
+
+const CAPTION_POSITION_OPTIONS: { label: string; value: CaptionPosition | null }[] = [
+  { label: "Auto", value: null },
+  { label: "Top", value: "top" },
+  { label: "Center", value: "center" },
+  { label: "Bottom", value: "bottom" },
+];
+
 const TEXT_COLOR_SWATCHES = [
   "#FFFFFF",
   "#F4F3EE",
@@ -75,6 +98,37 @@ const Section: React.FC<{ title: string; children: React.ReactNode; hint?: strin
   </div>
 );
 
+function SegmentedControl<T extends string | number | null>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { label: string; value: T }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex gap-1 rounded-lg border border-rim bg-surface p-0.5">
+      {options.map((opt) => {
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.label}
+            onClick={() => onChange(opt.value)}
+            className={`flex-1 rounded-md py-1.5 text-[12px] font-medium transition ${
+              active
+                ? "border border-accent-purple/40 bg-accent-purple/20 text-zinc-100"
+                : "text-muted hover:text-zinc-200"
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export const StylePage: React.FC = () => {
   const { finishes, setFinish } = useStore();
   const style = useActiveStyle();
@@ -87,11 +141,25 @@ export const StylePage: React.FC = () => {
     setTimeout(() => setEffectApplied(false), 2000);
   };
 
+  const [textStyleApplied, setTextStyleApplied] = useState(false);
+  const handleApplyTextStyle = () => {
+    if (!style.ready || !style.applyTextStyleToAllScenes) return;
+    style.applyTextStyleToAllScenes();
+    setTextStyleApplied(true);
+    setTimeout(() => setTextStyleApplied(false), 2000);
+  };
+
   if (!style.ready) {
     return <EmptyTargetState message={style.message} linkTo={style.linkTo} linkLabel={style.linkLabel} />;
   }
 
   const meta = TEMPLATES[style.template];
+  const activeTextStyleConfig = TEXT_STYLES.find((s) => s.id === style.textStyle) ?? TEXT_STYLES[0];
+  const currentFontFamily = style.fontOverride ?? activeTextStyleConfig.fontFamily;
+  const supportedWeights = FONT_SUPPORTED_WEIGHTS[currentFontFamily] ?? [400];
+  const weightOptions = FONT_WEIGHT_OPTIONS.filter(
+    (opt) => opt.value === null || supportedWeights.includes(opt.value)
+  );
 
   return (
     <div className="flex flex-col gap-7">
@@ -278,26 +346,111 @@ export const StylePage: React.FC = () => {
         )}
       </Section>
 
-      {/* ── Text Style ── */}
-      <Section title="Text Style">
+      {/* ── Text ── */}
+      <Section title="Text" hint="font, weight, size & position all tuned per style">
         <div className="grid grid-cols-2 gap-2">
-          {TEXT_STYLE_IDS.map((id) => {
-            const active = style.textStyle === id;
+          {TEXT_STYLES.map((cfg) => {
+            const active = style.textStyle === cfg.id;
             return (
               <button
-                key={id}
-                onClick={() => style.setTextStyle(id)}
-                className={`rounded-xl border px-2.5 py-2.5 text-center text-[12px] font-medium transition ${
+                key={cfg.id}
+                onClick={() => style.setTextStyle(cfg.id)}
+                className={`rounded-xl border px-3 py-3 text-left transition ${
                   active
-                    ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                    : "border-rim bg-surface text-muted hover:border-accent-purple"
+                    ? "border-accent-purple/60 bg-accent-purple/10"
+                    : "border-rim bg-surface hover:border-accent-purple"
                 }`}
               >
-                {TEXT_STYLE_LABELS[id]}
+                <div
+                  className="text-[15px] leading-snug text-zinc-100"
+                  style={{ fontFamily: cfg.fontFamily, fontWeight: cfg.fontWeight }}
+                >
+                  {cfg.label}
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted">{cfg.description}</div>
               </button>
             );
           })}
         </div>
+
+        <div className="space-y-1.5">
+          <span className="text-[11px] text-muted/70">Font</span>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => style.setFontOverride(null)}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition ${
+                style.fontOverride === null
+                  ? "border-accent-purple/60 bg-accent-purple/15 text-zinc-100"
+                  : "border-rim bg-surface text-muted hover:border-accent-purple hover:text-zinc-200"
+              }`}
+            >
+              Auto
+            </button>
+            {STYLE_FONTS.map((f) => {
+              const active = style.fontOverride === f.family;
+              return (
+                <button
+                  key={f.family}
+                  onClick={() => style.setFontOverride(f.family)}
+                  style={{ fontFamily: f.family }}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition ${
+                    active
+                      ? "border-accent-purple/60 bg-accent-purple/15 text-zinc-100"
+                      : "border-rim bg-surface text-muted hover:border-accent-purple hover:text-zinc-200"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-[11px] text-muted/70">Weight</span>
+          <SegmentedControl
+            options={weightOptions}
+            value={style.fontWeightOverride}
+            onChange={style.setFontWeightOverride}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-[11px] text-muted/70">Size</span>
+          <SegmentedControl
+            options={FONT_SIZE_OPTIONS}
+            value={style.fontSizeOverride}
+            onChange={style.setFontSizeOverride}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <span className="text-[11px] text-muted/70">Position</span>
+          <SegmentedControl
+            options={CAPTION_POSITION_OPTIONS}
+            value={style.captionPosition}
+            onChange={style.setCaptionPosition}
+          />
+        </div>
+
+        {style.applyTextStyleToAllScenes && (
+          <button
+            onClick={handleApplyTextStyle}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
+          >
+            {textStyleApplied ? (
+              <>
+                <Check size={14} className="text-accent-purple" />
+                <span className="text-accent-purple">Applied</span>
+              </>
+            ) : (
+              <>
+                <Paintbrush size={14} />
+                Apply style to all scenes
+              </>
+            )}
+          </button>
+        )}
       </Section>
 
       {/* ── Cinematic finishes (project-wide) ── */}

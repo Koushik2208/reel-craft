@@ -22,7 +22,11 @@ const defaultScenes: Scene[] = [
     overlays: [],
     motion: [],
     imageEffect: "zoom-in",
-    textStyle: "fade-elegant",
+    textStyle: "editorial",
+    fontOverride: null,
+    fontWeightOverride: null,
+    fontSizeOverride: null,
+    captionPosition: null,
   },
   {
     id: "scene-2",
@@ -38,7 +42,11 @@ const defaultScenes: Scene[] = [
     overlays: [],
     motion: [],
     imageEffect: "zoom-in",
-    textStyle: "fade-elegant",
+    textStyle: "editorial",
+    fontOverride: null,
+    fontWeightOverride: null,
+    fontSizeOverride: null,
+    captionPosition: null,
   },
 ];
 

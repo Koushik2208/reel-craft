@@ -1,12 +1,12 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 import { getFontsForLanguage } from "../shared/language";
-import { fraunces } from "../shared/fonts";
 import { getImageEffectStyle } from "../shared/imageEffects";
 import { TextStyleRenderer } from "../shared/TextStyleRenderer";
+import { resolveTextStyleProps } from "../shared/textStyles";
 import type { VideoProps } from "../schema";
 
-type Look = { bg: string; text: string; font: string; weight: number; tracking: string };
+type Look = { bg: string; text: string };
 
 export const minimalVariants = [
   { id: "ink",      label: "Ink",      colors: { bg: "#0E0F13", text: "#F4F3EE" } },
@@ -26,23 +26,26 @@ export const Minimal: React.FC<VideoProps> = ({
   layerMode = "full",
   textColorOverride = null,
   imageEffect = "zoom-in",
-  textStyle = "fade-elegant",
+  textStyle = "editorial",
+  fontOverride = null,
+  fontWeightOverride = null,
+  fontSizeOverride = null,
+  captionPosition = null,
 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const fonts = getFontsForLanguage(language);
   const effectStyle = getImageEffectStyle(imageEffect, frame, durationInFrames);
-  const frauncesFallback = language === "te" ? fonts.display : fraunces;
 
   const LOOKS: Record<string, Look> = {
-    ink:      { bg: "#0E0F13", text: "#F4F3EE", font: fonts.primary,    weight: 600, tracking: "-0.03em" },
-    paper:    { bg: "#FBF7EF", text: "#1C1A17", font: fonts.display,    weight: 500, tracking: "-0.01em" },
-    midnight: { bg: "#0E1525", text: "#EAF0FF", font: fonts.primary,    weight: 600, tracking: "-0.03em" },
-    rose:     { bg: "#1A0A0A", text: "#FFD6D6", font: frauncesFallback, weight: 500, tracking: "-0.01em" },
-    forest:   { bg: "#071510", text: "#C8F0D8", font: fonts.primary,    weight: 600, tracking: "-0.03em" },
-    sand:     { bg: "#F5EFE0", text: "#2C2010", font: frauncesFallback, weight: 500, tracking: "-0.01em" },
-    slate:    { bg: "#0D1117", text: "#CDD9E5", font: fonts.primary,    weight: 500, tracking: "-0.02em" },
-    gold:     { bg: "#0F0C00", text: "#FFD966", font: fonts.display,    weight: 600, tracking: "-0.01em" },
+    ink:      { bg: "#0E0F13", text: "#F4F3EE" },
+    paper:    { bg: "#FBF7EF", text: "#1C1A17" },
+    midnight: { bg: "#0E1525", text: "#EAF0FF" },
+    rose:     { bg: "#1A0A0A", text: "#FFD6D6" },
+    forest:   { bg: "#071510", text: "#C8F0D8" },
+    sand:     { bg: "#F5EFE0", text: "#2C2010" },
+    slate:    { bg: "#0D1117", text: "#CDD9E5" },
+    gold:     { bg: "#0F0C00", text: "#FFD966" },
   };
 
   const look = LOOKS[variant] ?? LOOKS.ink;
@@ -51,6 +54,16 @@ export const Minimal: React.FC<VideoProps> = ({
   if (layerMode === "background-only") {
     return <AbsoluteFill />;
   }
+
+  const resolved = resolveTextStyleProps(textStyle, {
+    fontOverride,
+    fontWeightOverride,
+    fontSizeOverride,
+    captionPosition,
+  });
+  // Language takes priority over the style's default font, but not over an
+  // explicit user font override.
+  const fontFamily = language === "te" && fontOverride === null ? fonts.display : resolved.fontFamily;
 
   return (
     <AbsoluteFill>
@@ -63,16 +76,20 @@ export const Minimal: React.FC<VideoProps> = ({
           transformOrigin: "center center",
         }}
       />
-      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center" }}>
-        <TextStyleRenderer
-          text={text}
-          textStyle={textStyle}
-          durationInFrames={durationInFrames}
-          color={textColorOverride ?? look.text}
-          fontFamily={look.font}
-          fontSize={52}
-        />
-      </AbsoluteFill>
+      <TextStyleRenderer
+        text={text}
+        textStyle={textStyle}
+        durationInFrames={durationInFrames}
+        color={textColorOverride ?? look.text}
+        fontFamily={fontFamily}
+        fontWeight={resolved.fontWeight}
+        fontSize={resolved.fontSize}
+        letterSpacing={resolved.letterSpacing}
+        wordSpacing={resolved.wordSpacing}
+        textTransform={resolved.textTransform}
+        opacity={resolved.opacity}
+        captionPosition={resolved.captionPosition}
+      />
     </AbsoluteFill>
   );
 };

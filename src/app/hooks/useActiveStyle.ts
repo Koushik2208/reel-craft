@@ -3,7 +3,7 @@ import { TEMPLATES } from "../../templates/registry";
 import type { TemplateId, LayerMode } from "../../templates/schema";
 import type { Language } from "../../templates/shared/language";
 import type { ImageEffect } from "../../templates/shared/imageEffects";
-import type { TextStyle } from "../../templates/shared/textStyles";
+import type { CaptionPosition, TextStyle } from "../../templates/shared/textStyles";
 import type { FrameId } from "../../frames/types";
 import type { ActiveOverlay, OverlayId, OverlayIntensity } from "../../overlays/types";
 import type { ActiveMotion, MotionConfig, MotionId } from "../../motion/types";
@@ -31,6 +31,14 @@ export type ActiveStyle =
       textStyle: TextStyle;
       setTextStyle: (s: TextStyle) => void;
       applyTextStyleToAllScenes: (() => void) | null;
+      fontOverride: string | null;
+      fontWeightOverride: number | null;
+      fontSizeOverride: number | null;
+      captionPosition: CaptionPosition | null;
+      setFontOverride: (f: string | null) => void;
+      setFontWeightOverride: (w: number | null) => void;
+      setFontSizeOverride: (s: number | null) => void;
+      setCaptionPosition: (p: CaptionPosition | null) => void;
       setFrame: (id: FrameId) => void;
       applyFrameToAllScenes: (() => void) | null;
       toggleOverlay: (id: OverlayId) => void;
@@ -92,6 +100,14 @@ export function useActiveStyle(): ActiveStyle {
       textStyle: pair.textStyle,
       setTextStyle: (s) => store.updateLinkedPairStyle({ textStyle: s }),
       applyTextStyleToAllScenes: null,
+      fontOverride: pair.fontOverride,
+      fontWeightOverride: pair.fontWeightOverride,
+      fontSizeOverride: pair.fontSizeOverride,
+      captionPosition: pair.captionPosition,
+      setFontOverride: (f) => store.updateLinkedPairStyle({ fontOverride: f }),
+      setFontWeightOverride: (w) => store.updateLinkedPairStyle({ fontWeightOverride: w }),
+      setFontSizeOverride: (s) => store.updateLinkedPairStyle({ fontSizeOverride: s }),
+      setCaptionPosition: (p) => store.updateLinkedPairStyle({ captionPosition: p }),
       setFrame: (id) => store.updateLinkedPairStyle({ frameId: id }),
       applyFrameToAllScenes: null,
       toggleOverlay: (id) => store.toggleLinkedOverlay(id),
@@ -138,6 +154,14 @@ export function useActiveStyle(): ActiveStyle {
     setTextStyle: store.setTextStyle,
     applyTextStyleToAllScenes:
       scenes.length > 1 ? () => store.applyTextStyleToAllScenes(scene.id) : null,
+    fontOverride: scene.fontOverride,
+    fontWeightOverride: scene.fontWeightOverride,
+    fontSizeOverride: scene.fontSizeOverride,
+    captionPosition: scene.captionPosition,
+    setFontOverride: store.setFontOverride,
+    setFontWeightOverride: store.setFontWeightOverride,
+    setFontSizeOverride: store.setFontSizeOverride,
+    setCaptionPosition: store.setCaptionPosition,
     setFrame: store.setFrame,
     applyFrameToAllScenes: scenes.length > 1 ? () => store.applyFrameToAllScenes(scene.id) : null,
     toggleOverlay: store.toggleOverlay,

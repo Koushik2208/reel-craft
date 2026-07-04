@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
+import { Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 import { MAX_LINKED_DURATION_SECONDS, type LinkedPair, type WordTimestamp } from "../store";
 import { getFontsForLanguage } from "../../templates/shared/language";
 import { sampleBackgroundBrightness } from "../../templates/shared/sampleBrightness";
 import { getContrastAdjustment } from "../../templates/shared/autoContrast";
 import { MAX_CHARS_PER_SCENE } from "../../templates/shared/textSplit";
 import { TextStyleRenderer } from "../../templates/shared/TextStyleRenderer";
+import { resolveTextStyleProps } from "../../templates/shared/textStyles";
 
 type Props = { linkedPair: NonNullable<LinkedPair> };
 
@@ -48,14 +49,6 @@ function groupWordsIntoLines(words: WordTimestamp[]): WordTimestamp[][] {
   return lines;
 }
 
-const containerStyle: React.CSSProperties = {
-  justifyContent: "flex-end",
-  alignItems: "center",
-  paddingBottom: 260,
-  paddingLeft: "9%",
-  paddingRight: "9%",
-};
-
 export const LinkedCaptions: React.FC<Props> = ({ linkedPair }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -76,6 +69,17 @@ export const LinkedCaptions: React.FC<Props> = ({ linkedPair }) => {
     ? getContrastAdjustment(brightness)
     : { textColor: "#FFFFFF", overlayOpacity: 1 };
   const textColor = linkedPair.textColorOverride ?? adjustment.textColor;
+
+  const resolved = resolveTextStyleProps(linkedPair.textStyle, {
+    fontOverride: linkedPair.fontOverride,
+    fontWeightOverride: linkedPair.fontWeightOverride,
+    fontSizeOverride: linkedPair.fontSizeOverride,
+    captionPosition: linkedPair.captionPosition,
+  });
+  // Language takes priority over the style's default font, but not over an
+  // explicit user font override.
+  const fontFamily =
+    linkedPair.language === "te" && linkedPair.fontOverride === null ? fonts.display : resolved.fontFamily;
 
   const words = linkedPair.transcript?.kind === "word" ? linkedPair.transcript.words : [];
   const lines = useMemo(() => groupWordsIntoLines(words), [words]);
@@ -140,26 +144,30 @@ export const LinkedCaptions: React.FC<Props> = ({ linkedPair }) => {
   if (units.length === 0) return null;
 
   return (
-    <AbsoluteFill style={containerStyle}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        {units.map((unit) => (
-          <Sequence
-            key={unit.key}
-            from={unit.startFrame}
+    <>
+      {units.map((unit) => (
+        <Sequence
+          key={unit.key}
+          from={unit.startFrame}
+          durationInFrames={Math.max(1, unit.endFrame - unit.startFrame)}
+          layout="none"
+        >
+          <TextStyleRenderer
+            text={unit.text}
+            textStyle={linkedPair.textStyle}
             durationInFrames={Math.max(1, unit.endFrame - unit.startFrame)}
-            layout="none"
-          >
-            <TextStyleRenderer
-              text={unit.text}
-              textStyle={linkedPair.textStyle}
-              durationInFrames={Math.max(1, unit.endFrame - unit.startFrame)}
-              color={textColor}
-              fontFamily={fonts.primary}
-              fontSize={50}
-            />
-          </Sequence>
-        ))}
-      </div>
-    </AbsoluteFill>
+            color={textColor}
+            fontFamily={fontFamily}
+            fontWeight={resolved.fontWeight}
+            fontSize={resolved.fontSize}
+            letterSpacing={resolved.letterSpacing}
+            wordSpacing={resolved.wordSpacing}
+            textTransform={resolved.textTransform}
+            opacity={resolved.opacity}
+            captionPosition={resolved.captionPosition}
+          />
+        </Sequence>
+      ))}
+    </>
   );
 };

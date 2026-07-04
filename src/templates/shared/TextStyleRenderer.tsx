@@ -1,14 +1,23 @@
 import React from "react";
-import { interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import type { TextStyle } from "./textStyles";
+import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { TEXT_STYLES, type CaptionPosition, type TextStyle } from "./textStyles";
 
 export type TextStyleRendererProps = {
   text: string;
   textStyle: TextStyle;
   durationInFrames: number;
   color: string;
+  // These are the RESOLVED values (style default + override applied) —
+  // the renderer itself doesn't know about overrides, callers resolve the
+  // final values via `resolveTextStyleProps` before passing them in.
   fontFamily: string;
-  fontSize?: number;
+  fontWeight: number;
+  fontSize: number;
+  letterSpacing: string;
+  wordSpacing?: string;
+  textTransform?: "uppercase" | "lowercase" | "none";
+  opacity?: number;
+  captionPosition: CaptionPosition;
 };
 
 const CLAMP = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
@@ -17,6 +26,12 @@ const CENTER_BLOCK: React.CSSProperties = {
   maxWidth: "82%",
   textAlign: "center",
   whiteSpace: "pre-wrap",
+};
+
+const POSITION_STYLE: Record<CaptionPosition, React.CSSProperties> = {
+  top: { justifyContent: "flex-start", paddingTop: "10%" },
+  center: { justifyContent: "center" },
+  bottom: { justifyContent: "flex-end", paddingBottom: "12%" },
 };
 
 function splitWords(text: string): string[] {
@@ -59,14 +74,24 @@ function activeSlot(count: number, frame: number, durationInFrames: number) {
   return { index, local: frame - index * slot, slot };
 }
 
-function baseTextStyle(color: string, fontFamily: string, fontSize: number): React.CSSProperties {
+function baseTextStyle(
+  color: string,
+  fontFamily: string,
+  fontWeight: number,
+  fontSize: number,
+  letterSpacing: string,
+  textTransform?: "uppercase" | "lowercase" | "none",
+  wordSpacing?: string
+): React.CSSProperties {
   return {
     color,
     fontFamily,
     fontSize,
-    fontWeight: 600,
-    lineHeight: 1.15,
-    letterSpacing: "-0.01em",
+    fontWeight,
+    lineHeight: 1.3,
+    letterSpacing,
+    wordSpacing: wordSpacing ?? "0.2em",
+    textTransform,
     textShadow: "0 2px 40px rgba(0,0,0,0.5)",
   };
 }
@@ -79,12 +104,17 @@ type StyleProps = {
   durationInFrames: number;
   baseStyle: React.CSSProperties;
   color: string;
+  styleOpacity: number;
 };
 
-const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames, baseStyle }) => {
+const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames, baseStyle, styleOpacity }) => {
   const per = durationInFrames / words.length;
   const [exitStart, exitEnd] = safeRange(durationInFrames * 0.85, durationInFrames);
   const exitOpacity = interpolate(frame, [exitStart, exitEnd], [1, 0], CLAMP);
+  // Words render as separate flex items (not a single text node), so CSS
+  // `word-spacing` has no whitespace to act on — the flex `gap` is what
+  // actually controls the visible space between words here.
+  const wordGap = String(baseStyle.wordSpacing ?? "0.4em");
 
   return (
     <div
@@ -92,7 +122,11 @@ const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames
         display: "flex",
         flexWrap: "wrap",
         justifyContent: "center",
-        gap: "0.15em 0.4em",
+        // `gap`'s em unit resolves against this container's own font-size,
+        // not the word spans' — without this, it was resolving against the
+        // inherited ~16px root size instead of the style's actual fontSize.
+        fontSize: baseStyle.fontSize,
+        gap: `0.15em ${wordGap}`,
         maxWidth: "82%",
         textAlign: "center",
       }}
@@ -109,7 +143,7 @@ const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames
             style={{
               ...baseStyle,
               display: "inline-block",
-              opacity: inOpacity * exitOpacity,
+              opacity: inOpacity * exitOpacity * styleOpacity,
               transform: `translateY(${y}px)`,
             }}
           >
@@ -121,7 +155,7 @@ const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames
   );
 };
 
-const RevealMask: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle }) => {
+const RevealMask: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, styleOpacity }) => {
   const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
   const word = words[index];
   const [wipeStart, wipeEnd] = safeRange(0, slot * 0.5);
@@ -129,14 +163,21 @@ const RevealMask: React.FC<StyleProps> = ({ words, frame, durationInFrames, base
 
   return (
     <div style={CENTER_BLOCK}>
-      <span style={{ ...baseStyle, display: "inline-block", clipPath: `inset(0 ${wipe}% 0 0)` }}>
+      <span
+        style={{
+          ...baseStyle,
+          display: "inline-block",
+          opacity: styleOpacity,
+          clipPath: `inset(0 ${wipe}% 0 0)`,
+        }}
+      >
         {word}
       </span>
     </div>
   );
 };
 
-const BlurResolve: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle }) => {
+const BlurResolve: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle, styleOpacity }) => {
   const resolveEnd = Math.max(1, durationInFrames * 0.3);
   const blur = interpolate(frame, [0, resolveEnd], [8, 0], CLAMP);
   const scale = interpolate(frame, [0, resolveEnd], [1.05, 1], CLAMP);
@@ -150,7 +191,7 @@ const BlurResolve: React.FC<StyleProps> = ({ text, frame, durationInFrames, base
         ...CENTER_BLOCK,
         filter: `blur(${blur}px)`,
         transform: `scale(${scale})`,
-        opacity,
+        opacity: opacity * styleOpacity,
       }}
     >
       {text}
@@ -158,13 +199,14 @@ const BlurResolve: React.FC<StyleProps> = ({ text, frame, durationInFrames, base
   );
 };
 
-const Ghost: React.FC<StyleProps> = ({ text, baseStyle }) => (
-  <div style={{ ...baseStyle, ...CENTER_BLOCK, opacity: 0.5 }}>{text}</div>
+const Ghost: React.FC<StyleProps> = ({ text, baseStyle, styleOpacity }) => (
+  <div style={{ ...baseStyle, ...CENTER_BLOCK, opacity: styleOpacity }}>{text}</div>
 );
 
-const LetterExpand: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle }) => {
+const LetterExpand: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle, styleOpacity }) => {
+  const targetEm = parseFloat(String(baseStyle.letterSpacing)) || 0.12;
   const growEnd = Math.max(1, durationInFrames * 0.25);
-  const spacing = interpolate(frame, [0, growEnd], [0.3, 0.05], CLAMP);
+  const spacing = interpolate(frame, [0, growEnd], [targetEm + 0.25, targetEm], CLAMP);
   const inOpacity = interpolate(frame, [0, growEnd], [0, 1], CLAMP);
   const [holdEnd, fadeEnd] = safeRange(durationInFrames * 0.9, durationInFrames);
   const outOpacity = interpolate(frame, [holdEnd, fadeEnd], [1, 0], CLAMP);
@@ -175,7 +217,7 @@ const LetterExpand: React.FC<StyleProps> = ({ text, frame, durationInFrames, bas
         ...baseStyle,
         ...CENTER_BLOCK,
         letterSpacing: `${spacing}em`,
-        opacity: Math.min(inOpacity, outOpacity),
+        opacity: Math.min(inOpacity, outOpacity) * styleOpacity,
       }}
     >
       {text}
@@ -183,15 +225,15 @@ const LetterExpand: React.FC<StyleProps> = ({ text, frame, durationInFrames, bas
   );
 };
 
-const LineByLine: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle }) => {
+const LineByLine: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle, styleOpacity }) => {
   const lines = splitIntoLines(text);
   const slot = Math.max(1, durationInFrames / lines.length);
   const index = Math.min(lines.length - 1, Math.max(0, Math.floor(frame / slot)));
 
-  return <div style={{ ...baseStyle, ...CENTER_BLOCK }}>{lines[index]}</div>;
+  return <div style={{ ...baseStyle, ...CENTER_BLOCK, opacity: styleOpacity }}>{lines[index]}</div>;
 };
 
-const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, color }) => {
+const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, color, styleOpacity }) => {
   const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
   const word = words[index];
   const [fadeStart, fadeEnd] = safeRange(0, Math.max(1, slot * 0.3));
@@ -202,7 +244,7 @@ const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, b
   return (
     <div style={CENTER_BLOCK}>
       <div style={{ position: "relative", display: "inline-block" }}>
-        <span style={{ ...baseStyle, opacity: fadeIn }}>{word}</span>
+        <span style={{ ...baseStyle, opacity: fadeIn * styleOpacity }}>{word}</span>
         <div
           style={{
             position: "absolute",
@@ -220,7 +262,7 @@ const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, b
   );
 };
 
-const SplitReveal: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle }) => {
+const SplitReveal: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, styleOpacity }) => {
   const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
   const word = words[index];
   const [revealStart, revealEnd] = safeRange(0, Math.max(1, slot * 0.5));
@@ -228,7 +270,7 @@ const SplitReveal: React.FC<StyleProps> = ({ words, frame, durationInFrames, bas
 
   return (
     <div style={CENTER_BLOCK}>
-      <div style={{ position: "relative", display: "inline-block" }}>
+      <div style={{ position: "relative", display: "inline-block", opacity: styleOpacity }}>
         <span style={{ ...baseStyle, visibility: "hidden" }}>{word}</span>
         <span style={{ ...baseStyle, position: "absolute", left: 0, top: 0, clipPath: `inset(0 0 ${clip}% 0)` }}>
           {word}
@@ -249,31 +291,62 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
   durationInFrames,
   color,
   fontFamily,
-  fontSize = 52,
+  fontWeight,
+  fontSize,
+  letterSpacing,
+  wordSpacing,
+  textTransform,
+  opacity,
+  captionPosition,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const words = splitWords(text);
-  const baseStyle = baseTextStyle(color, fontFamily, fontSize);
-  const common: StyleProps = { text, words, frame, fps, durationInFrames, baseStyle, color };
+  const baseStyle = baseTextStyle(color, fontFamily, fontWeight, fontSize, letterSpacing, textTransform, wordSpacing);
+  const styleOpacity = opacity ?? 1;
+  const common: StyleProps = { text, words, frame, fps, durationInFrames, baseStyle, color, styleOpacity };
 
-  switch (textStyle) {
+  const animation = TEXT_STYLES.find((s) => s.id === textStyle)?.animation ?? "fade-elegant";
+
+  let content: React.ReactNode;
+  switch (animation) {
     case "reveal-mask":
-      return <RevealMask {...common} />;
+      content = <RevealMask {...common} />;
+      break;
     case "blur-resolve":
-      return <BlurResolve {...common} />;
+      content = <BlurResolve {...common} />;
+      break;
     case "ghost":
-      return <Ghost {...common} />;
+      content = <Ghost {...common} />;
+      break;
     case "letter-expand":
-      return <LetterExpand {...common} />;
+      content = <LetterExpand {...common} />;
+      break;
     case "line-by-line":
-      return <LineByLine {...common} />;
+      content = <LineByLine {...common} />;
+      break;
     case "underline-wipe":
-      return <UnderlineWipe {...common} />;
+      content = <UnderlineWipe {...common} />;
+      break;
     case "split-reveal":
-      return <SplitReveal {...common} />;
+      content = <SplitReveal {...common} />;
+      break;
     case "fade-elegant":
     default:
-      return <FadeElegant {...common} />;
+      content = <FadeElegant {...common} />;
   }
+
+  return (
+    <AbsoluteFill
+      style={{
+        flexDirection: "column",
+        alignItems: "center",
+        paddingLeft: "5%",
+        paddingRight: "5%",
+        ...POSITION_STYLE[captionPosition],
+      }}
+    >
+      {content}
+    </AbsoluteFill>
+  );
 };

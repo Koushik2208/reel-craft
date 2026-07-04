@@ -41,7 +41,11 @@ export const LinkedComposition: React.FC<LinkedCompositionProps> = ({ linkedPair
         layerMode={layerMode === "greenscreen" ? "greenscreen" : "background-only"}
         textColorOverride={linkedPair.textColorOverride}
         imageEffect={linkedPair.imageEffect ?? "zoom-in"}
-        textStyle={linkedPair.textStyle ?? "fade-elegant"}
+        textStyle={linkedPair.textStyle ?? "editorial"}
+        fontOverride={linkedPair.fontOverride ?? null}
+        fontWeightOverride={linkedPair.fontWeightOverride ?? null}
+        fontSizeOverride={linkedPair.fontSizeOverride ?? null}
+        captionPosition={linkedPair.captionPosition ?? null}
       />
       {showCaptions && <LinkedCaptions linkedPair={linkedPair} />}
       {!skipFinishes && finishes?.vignette && <VignetteOverlay />}
