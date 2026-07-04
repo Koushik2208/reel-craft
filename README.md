@@ -183,6 +183,38 @@ English and Telugu, each with a dedicated font stack (Inter/Playfair Display/Beb
 English; Baloo 2/Tiro Telugu/Ramabhadra for Telugu). Set per-scene in Manual Mode, project-level
 in Linked Mode.
 
+### Text Styles
+
+Twelve named text styles, each a complete typographic identity — font, weight, size, letter/word
+spacing, position, opacity, and its own reveal animation — chosen together so picking a style
+alone produces a finished look.
+
+| Style | Vibe | Animation |
+|---|---|---|
+| **Cinéma** | film · light | Reveal Mask — horizontal wipe reveal |
+| **Editorial** | serif · classic | Fade Elegant — word-by-word fade + rise |
+| **Impact** | bold · shout | Line by Line — one line at a time |
+| **Minimal** | quiet · thin | Ghost — static, reduced opacity |
+| **Neon** | glow · bold | Blur Resolve — blur-to-sharp with scale |
+| **Handwritten** | script · warm | Underline Wipe — underline draws in under each word |
+| **Luxury** | wide · elegant | Letter Expand — letter-spacing settles into place |
+| **Street** | urban · heavy | Split Reveal — text splits top/bottom to reveal |
+| **Soft** | gentle · light | Fade Elegant |
+| **Cinematic Title** | epic · bold | Blur Resolve |
+| **Condensed** | tight · clean | Reveal Mask |
+| **Dancing** | cursive · soft | Fade Elegant |
+
+Any of the twelve can be further tuned without leaving the style behind:
+
+- **Font** — override with any of 12 available fonts, or leave on Auto to use the style's own.
+- **Weight** — Auto / Light / Regular / Bold / Black, filtered to whatever weights the active
+  font actually ships (e.g. Bebas Neue and Italiana are single-weight, so only Auto shows).
+- **Size** — Auto / S / M / L / XL.
+- **Position** — Auto / Top / Center / Bottom.
+
+Set per-scene in Manual Mode (with an "Apply style to all scenes" shortcut, like Image Effect),
+project-level in Linked Mode.
+
 ### Text Color Override
 
 8 fixed swatches for manually forcing the text color, for when auto-contrast (which picks white
@@ -206,12 +238,6 @@ Both support trim-start and fade-in/fade-out (0–5s) controls.
 
 `Whisper` is modeled as a second transcript source (`TranscriptSource`) but not yet wired up —
 SRT is the only transcript input available today.
-
-### Caption Styles (Linked Mode only)
-
-Five caption animation styles: Fade, Pop, Typewriter, Highlight, Slide Up. Highlight needs
-word-level timestamps to dim inactive words — it falls back to a plain fade for block-level (SRT)
-transcripts, since SRT only carries per-line timing.
 
 ### Project Title
 
@@ -284,7 +310,6 @@ Handing off to a real NLE for finishing is the intended workflow, not a limitati
 
 ## Roadmap
 
-- Dedicated Text Styles page (currently color-override only)
 - Social UI frames (TikTok/Instagram HUD overlays)
 - Whisper API integration for word-level captions without manual SRT authoring
 - Project save/load as JSON (currently persisted only to browser storage)

@@ -663,6 +663,7 @@ export const useStore = create<State>()(
           asset: source.asset,
           layerMode: source.layerMode,
           textStyle: source.textStyle,
+          textColorOverride: source.textColorOverride,
           fontOverride: source.fontOverride,
           fontWeightOverride: source.fontWeightOverride,
           fontSizeOverride: source.fontSizeOverride,
