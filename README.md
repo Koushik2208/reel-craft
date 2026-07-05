@@ -16,7 +16,7 @@ handoff easy: export text-on-#00FF00, key it out, composite over your own footag
 ## Tech Stack
 
 - React 18 + TypeScript
-- Remotion 4.x (`@remotion/player`, `@remotion/web-renderer`, `@remotion/media`, `@remotion/google-fonts`)
+- Remotion 4.x (`@remotion/player`, `@remotion/web-renderer`, `@remotion/media`, `@remotion/google-fonts`, `@remotion/transitions`)
 - Tailwind CSS
 - Zustand (with `persist` middleware — your project survives a reload, minus object URLs)
 - Vite
@@ -47,9 +47,11 @@ mode's data, so the app asks for confirmation first.
 
 ### Manual Mode
 Build a video scene by scene. Each scene has its own text, background (image or video,
-depending on the template), template, look, frame, overlays, image effect, language, and layer
-mode. Scenes play back-to-back (`SceneSeries`), and duration is derived automatically from each
-scene's word count (clamped 3–14s) unless you set a manual duration.
+depending on the template), template, look, frame, overlays, image effect, transition, language,
+and layer mode. Scenes play back-to-back (`SceneSeries`), and duration is derived automatically
+from each scene's word count (clamped 3–14s) unless you set a manual duration. Pasting or typing
+text past the per-scene character limit offers a one-click split into multiple scenes, dividing
+the text by word count.
 
 Use Manual Mode for: quote reels, listicles, tutorials, or any video where you're writing/pasting
 text yourself, scene by scene.
@@ -89,6 +91,8 @@ They're purely cosmetic and stack independently of template/overlay choices.
 |---|---|
 | **None** | Raw scene, no device |
 | **Minimal Bezel** | Clean, neutral device shell — works with any content |
+| **Square Bezel** | Square content window on a black shell |
+| **Landscape Bezel** | 16:9 content window on a black shell |
 | **Browser Window** | Desktop browser chrome (tab bar, traffic lights) |
 | **Gradient Border** | Glowing pink → purple → cyan ring |
 | **Neon Glow** | Electric cyan border with outer glow |
@@ -98,6 +102,11 @@ They're purely cosmetic and stack independently of template/overlay choices.
 | **Cinematic Scope** | Anamorphic 2.39:1 letterbox bars |
 | **TV Frame** | Retro CRT television shell |
 | **Floating Device** | Phone floating on a solid background |
+| **Neon Sign** | Flickering neon tube border |
+| **Arch Portal** | Arch-shaped content window |
+| **Vintage Projector** | Dust particles, flicker, and vignette |
+| **Sticky Note** | Content on a pinned sticky note |
+| **Split Screen** | Content split across three vertical panels |
 
 You can also export a frame's shell alone as a transparent PNG (Frames page → "Frame Shell PNG")
 — useful if you want the device chrome as a compositing element in another editor without
@@ -146,6 +155,14 @@ number-counter, countdown.
 Available in both Manual Mode (per-scene, with "Apply motion to all scenes") and Linked Mode
 (project-level). Driven purely by frame/spring interpolation (no CSS animation), so it renders
 identically in preview and in the exported MP4.
+
+### Transitions
+
+Manual Mode only. Each scene carries a transition that plays between it and the next scene, with
+a short / medium / long duration (10 / 20 / 30 frames). Nine are available: None (hard cut),
+Crossfade, Slide (left / right / up / down), Wipe, Paper Tear (organic SVG tear reveal), and
+Clapperboard (cinema clap reveal). Set per-scene, with an "Apply transition to all scenes"
+shortcut.
 
 ### Image Effects
 
@@ -270,6 +287,8 @@ generator or TTS tool before bringing the result into Reel Craft. Not a generati
   per photo + Polaroid or Floating Device frame.
 - **Tutorial / listicle with steps** → Manual Mode + Step Badge motion graphic per scene (Step 1/N,
   2/N, ...) + Progress Bar to show overall position.
+- **Cinematic scene changes** → Manual Mode + Clapperboard or Paper Tear transition between scenes
+  (long duration) for a dramatic beat, or Crossfade for a subtler cut.
 
 ## Rendering
 
