@@ -20,6 +20,7 @@ import {
   FileText,
   Pencil,
   Layers,
+  FolderOpen,
 } from "lucide-react";
 import type { EditorPreviewContext } from "../components/editorPreviewContext";
 import { useStore, sceneDurationInFrames, type CinematicFinishes, type Scene } from "../store";
@@ -27,7 +28,13 @@ import { TEMPLATES } from "../../templates/registry";
 import { FPS } from "../../templates/shared/timing";
 import { FRAMES } from "../../frames/types";
 import { renderSceneToFile } from "../renderScene";
-import { downloadBlob, getExportFormat, titledFilename } from "../render";
+import {
+  downloadBlob,
+  exportProjectJson,
+  getExportFormat,
+  importProjectJson,
+  titledFilename,
+} from "../render";
 import { SrtImportModal } from "../components/SrtImportModal";
 import { ModeSwitcher } from "../components/ModeSwitcher";
 import { ProjectTitleInput } from "../components/ProjectTitleInput";
@@ -68,9 +75,44 @@ export const SceneListPage: React.FC = () => {
     setAudioFadeOut,
     clearAudio,
     setFinish,
+    loadProject,
   } = useStore();
 
   const [srtModalOpen, setSrtModalOpen] = useState(false);
+
+  const [projectBanner, setProjectBanner] = useState<{ kind: "success" | "error"; text: string } | null>(
+    null
+  );
+  useEffect(() => {
+    if (!projectBanner) return;
+    const t = setTimeout(() => setProjectBanner(null), 5000);
+    return () => clearTimeout(t);
+  }, [projectBanner]);
+
+  const projectFileRef = useRef<HTMLInputElement>(null);
+  const handleSaveProject = useCallback(() => {
+    exportProjectJson(useStore.getState());
+  }, []);
+  const handleOpenProjectFile = useCallback(
+    async (file: File | undefined) => {
+      if (!file) return;
+      try {
+        const json = await importProjectJson(file);
+        loadProject(json);
+        setProjectBanner({
+          kind: "success",
+          text: "Project loaded. Re-attach any audio or background files.",
+        });
+      } catch (e) {
+        console.error(e);
+        setProjectBanner({
+          kind: "error",
+          text: "Could not load this file. Please check the format.",
+        });
+      }
+    },
+    [loadProject]
+  );
 
   const [styleApplied, setStyleApplied] = useState(false);
   const handleApplyStyle = () => {
@@ -144,12 +186,56 @@ export const SceneListPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-7">
+      {projectBanner && (
+        <div
+          className={`fixed left-1/2 top-3 z-50 flex max-w-md -translate-x-1/2 items-center gap-3 rounded-xl border border-rim bg-surface px-4 py-2.5 text-[13px] shadow-rim ${
+            projectBanner.kind === "success" ? "text-zinc-100" : "text-red-300"
+          }`}
+        >
+          <span className="flex-1">{projectBanner.text}</span>
+          <button
+            onClick={() => setProjectBanner(null)}
+            className="shrink-0 text-muted transition hover:text-zinc-100"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* ── Project title ── */}
       <ProjectTitleInput />
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-zinc-100">Scenes</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-zinc-100">Scenes</h2>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleSaveProject}
+              title="Save Project"
+              className="flex items-center justify-center rounded-lg border border-rim bg-surface p-1.5 text-muted transition hover:border-accent-purple hover:text-zinc-200"
+            >
+              <Download size={14} />
+            </button>
+            <button
+              onClick={() => projectFileRef.current?.click()}
+              title="Open Project"
+              className="flex items-center justify-center rounded-lg border border-rim bg-surface p-1.5 text-muted transition hover:border-accent-purple hover:text-zinc-200"
+            >
+              <FolderOpen size={14} />
+            </button>
+            <input
+              ref={projectFileRef}
+              type="file"
+              accept=".json,.reelcraft.json"
+              className="hidden"
+              onChange={(e) => {
+                void handleOpenProjectFile(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </div>
+        </div>
         <ModeSwitcher />
       </div>
       <div className="flex items-center justify-between gap-2">

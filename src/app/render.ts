@@ -3,6 +3,13 @@ import { SceneSeries, type SceneSeriesProps } from "./components/SceneSeries";
 import { LinkedComposition, type LinkedCompositionProps } from "./components/LinkedComposition";
 import { FPS, WIDTH, HEIGHT } from "../templates/shared/timing";
 import type { LayerMode } from "../templates/schema";
+import {
+  stripObjectUrls,
+  type CinematicFinishes,
+  type Scene,
+  type ProjectAudio,
+  type LinkedPair,
+} from "./store";
 
 export type RenderHandle = {
   promise: Promise<Blob>;
@@ -150,4 +157,47 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+const PROJECT_FILE_VERSION = 1;
+
+// Serializes the full project as JSON and triggers a download. Object URLs
+// (asset/audio/background `src`) can't survive the round trip, so they're
+// stripped the same way the persisted store strips them on reload.
+export function exportProjectJson(state: {
+  projectTitle: string;
+  projectMode: "manual" | "linked";
+  finishes: CinematicFinishes;
+  scenes: Scene[];
+  activeSceneId: string;
+  audio: ProjectAudio;
+  linkedPair: LinkedPair;
+}): void {
+  const payload = { version: PROJECT_FILE_VERSION, ...stripObjectUrls(state) };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const filename = titledFilename(
+    state.projectTitle,
+    "",
+    "reelcraft.json",
+    "reelcraft-project.json"
+  );
+  downloadBlob(blob, filename);
+}
+
+// Reads and parses a project JSON file. Only checks the shape needed to
+// safely hand the result to `loadProject` — deeper field-level backfilling
+// happens there, same as the persisted-store migration.
+export async function importProjectJson(file: File): Promise<unknown> {
+  const text = await file.text();
+  const parsed: unknown = JSON.parse(text);
+  const hasValidShape =
+    typeof parsed === "object" &&
+    parsed !== null &&
+    (parsed as { version?: unknown }).version === PROJECT_FILE_VERSION &&
+    Array.isArray((parsed as { scenes?: unknown }).scenes);
+  if (!hasValidShape) {
+    throw new Error("Invalid project file");
+  }
+  return parsed;
 }

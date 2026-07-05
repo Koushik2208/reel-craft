@@ -270,9 +270,10 @@ type State = {
   setAudioFadeOut: (seconds: number) => void;
   clearAudio: () => void;
   setFinish: (key: keyof CinematicFinishes, value: boolean) => void;
+  loadProject: (json: unknown) => void;
 };
 
-type PersistedState = {
+export type PersistedState = {
   scenes: (Omit<Scene, "asset"> & { asset: null })[];
   activeSceneId: string;
   audio: ProjectAudio;
@@ -289,6 +290,127 @@ type PersistedState = {
 
 function patchActive(scenes: Scene[], activeId: string, patch: Partial<Scene>): Scene[] {
   return scenes.map((s) => (s.id === activeId ? { ...s, ...patch } : s));
+}
+
+export type ProjectSnapshot = Pick<
+  State,
+  "scenes" | "activeSceneId" | "audio" | "finishes" | "projectMode" | "projectTitle" | "linkedPair"
+>;
+
+// Object URLs don't survive reload (or a save-to-disk round trip); strip
+// asset from every scene and audio.src/background.src everywhere else.
+export function stripObjectUrls(s: ProjectSnapshot): PersistedState {
+  return {
+    scenes: s.scenes.map(({ asset: _asset, ...rest }) => ({ ...rest, asset: null })),
+    activeSceneId: s.activeSceneId,
+    audio: s.audio ? { ...s.audio, src: null } : null,
+    finishes: s.finishes,
+    projectMode: s.projectMode,
+    projectTitle: s.projectTitle,
+    linkedPair: s.linkedPair
+      ? {
+          ...s.linkedPair,
+          audio: s.linkedPair.audio ? { ...s.linkedPair.audio, src: null } : null,
+          background: s.linkedPair.background
+            ? { ...s.linkedPair.background, src: null }
+            : null,
+        }
+      : null,
+  };
+}
+
+type LooseScene = Omit<
+  Scene,
+  | "asset"
+  | "overlays"
+  | "imageEffect"
+  | "motion"
+  | "textStyle"
+  | "fontOverride"
+  | "fontWeightOverride"
+  | "fontSizeOverride"
+  | "captionPosition"
+  | "frameId"
+  | "transition"
+> & {
+  asset?: unknown;
+  overlays?: ActiveOverlay[];
+  imageEffect?: ImageEffect;
+  motion?: ActiveMotion[];
+  textStyle?: string;
+  fontOverride?: string | null;
+  fontWeightOverride?: number | null;
+  fontSizeOverride?: number | null;
+  captionPosition?: CaptionPosition | null;
+  frameId: string;
+  transition?: SceneTransition;
+};
+
+type LooseLinkedPair =
+  | (Omit<
+      NonNullable<PersistedState["linkedPair"]>,
+      | "imageEffect"
+      | "motion"
+      | "textStyle"
+      | "fontOverride"
+      | "fontWeightOverride"
+      | "fontSizeOverride"
+      | "captionPosition"
+      | "frameId"
+    > & {
+      imageEffect?: ImageEffect;
+      motion?: ActiveMotion[];
+      textStyle?: string;
+      fontOverride?: string | null;
+      fontWeightOverride?: number | null;
+      fontSizeOverride?: number | null;
+      captionPosition?: CaptionPosition | null;
+      frameId: string;
+    })
+  | null;
+
+const VALID_TEXT_STYLE_IDS: readonly string[] = TEXT_STYLE_IDS;
+const normalizeTextStyle = (t: string | undefined): TextStyle =>
+  t && VALID_TEXT_STYLE_IDS.includes(t) ? (t as TextStyle) : DEFAULT_TEXT_STYLE;
+const normalizeFrameId = (f: string): FrameId => (f === "clapperboard" ? "none" : (f as FrameId));
+const normalizeTransition = (t: SceneTransition | undefined): SceneTransition =>
+  !t || (t.id as string) === "paper-tear" ? DEFAULT_TRANSITION : t;
+
+// Shared by the persist `migrate` step (older localStorage snapshots) and
+// `loadProject` (user-supplied JSON files) — both can hand us scenes/linkedPair
+// missing fields that postdate when the data was written.
+function normalizeImportedScenes(scenes: LooseScene[]): Scene[] {
+  return scenes.map((s) => ({
+    ...s,
+    asset: null,
+    overlays: s.overlays ?? [],
+    imageEffect: s.imageEffect ?? "zoom-in",
+    motion: s.motion ?? [],
+    textStyle: normalizeTextStyle(s.textStyle),
+    fontOverride: s.fontOverride ?? null,
+    fontWeightOverride: s.fontWeightOverride ?? null,
+    fontSizeOverride: s.fontSizeOverride ?? null,
+    captionPosition: s.captionPosition ?? null,
+    frameId: normalizeFrameId(s.frameId),
+    transition: normalizeTransition(s.transition),
+  }));
+}
+
+function normalizeImportedLinkedPair(linkedPair: LooseLinkedPair): LinkedPair {
+  if (!linkedPair) return linkedPair;
+  return {
+    ...linkedPair,
+    audio: linkedPair.audio ? { ...linkedPair.audio, src: null } : null,
+    background: linkedPair.background ? { ...linkedPair.background, src: null } : null,
+    imageEffect: linkedPair.imageEffect ?? "zoom-in",
+    motion: linkedPair.motion ?? [],
+    textStyle: normalizeTextStyle(linkedPair.textStyle),
+    fontOverride: linkedPair.fontOverride ?? null,
+    fontWeightOverride: linkedPair.fontWeightOverride ?? null,
+    fontSizeOverride: linkedPair.fontSizeOverride ?? null,
+    captionPosition: linkedPair.captionPosition ?? null,
+    frameId: normalizeFrameId(linkedPair.frameId),
+  };
 }
 
 export const useStore = create<State>()(
@@ -661,6 +783,26 @@ export const useStore = create<State>()(
       setFinish: (key, value) =>
         set((s) => ({ finishes: { ...s.finishes, [key]: value } })),
 
+      loadProject: (json) => {
+        const parsed = json as Omit<PersistedState, "scenes" | "linkedPair"> & {
+          scenes: LooseScene[];
+          linkedPair: LooseLinkedPair;
+        };
+        const scenes = normalizeImportedScenes(parsed.scenes);
+        const activeSceneId = scenes.some((s) => s.id === parsed.activeSceneId)
+          ? parsed.activeSceneId
+          : (scenes[0]?.id ?? parsed.activeSceneId);
+        set({
+          projectTitle: parsed.projectTitle,
+          projectMode: parsed.projectMode,
+          finishes: parsed.finishes,
+          scenes,
+          activeSceneId,
+          audio: parsed.audio ? { ...parsed.audio, src: null } : null,
+          linkedPair: normalizeImportedLinkedPair(parsed.linkedPair),
+        });
+      },
+
       applyStyleToAllScenes: (sourceId) => {
         const { scenes } = get();
         const source = scenes.find((s) => s.id === sourceId);
@@ -772,92 +914,16 @@ export const useStore = create<State>()(
       // referencing it falls back to "none".
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
-          scenes: (Omit<
-            Scene,
-            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId" | "transition"
-          > & {
-            asset: null;
-            overlays?: ActiveOverlay[];
-            imageEffect?: ImageEffect;
-            motion?: ActiveMotion[];
-            textStyle?: string;
-            fontOverride?: string | null;
-            fontWeightOverride?: number | null;
-            fontSizeOverride?: number | null;
-            captionPosition?: CaptionPosition | null;
-            frameId: string;
-            transition?: SceneTransition;
-          })[];
-          linkedPair:
-            | (Omit<
-                NonNullable<PersistedState["linkedPair"]>,
-                "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId"
-              > & {
-                imageEffect?: ImageEffect;
-                motion?: ActiveMotion[];
-                textStyle?: string;
-                fontOverride?: string | null;
-                fontWeightOverride?: number | null;
-                fontSizeOverride?: number | null;
-                captionPosition?: CaptionPosition | null;
-                frameId: string;
-              })
-            | null;
+          scenes: LooseScene[];
+          linkedPair: LooseLinkedPair;
         };
-        const validTextStyleIds: readonly string[] = TEXT_STYLE_IDS;
-        const normalizeTextStyle = (t: string | undefined): TextStyle =>
-          t && validTextStyleIds.includes(t) ? (t as TextStyle) : DEFAULT_TEXT_STYLE;
-        const normalizeFrameId = (f: string): FrameId => (f === "clapperboard" ? "none" : (f as FrameId));
-        const normalizeTransition = (t: SceneTransition | undefined): SceneTransition =>
-          !t || (t.id as string) === "paper-tear" ? DEFAULT_TRANSITION : t;
         return {
           ...state,
-          scenes: state.scenes.map((s) => ({
-            ...s,
-            overlays: s.overlays ?? [],
-            imageEffect: s.imageEffect ?? "zoom-in",
-            motion: s.motion ?? [],
-            textStyle: normalizeTextStyle(s.textStyle),
-            fontOverride: s.fontOverride ?? null,
-            fontWeightOverride: s.fontWeightOverride ?? null,
-            fontSizeOverride: s.fontSizeOverride ?? null,
-            captionPosition: s.captionPosition ?? null,
-            frameId: normalizeFrameId(s.frameId),
-            transition: normalizeTransition(s.transition),
-          })),
-          linkedPair: state.linkedPair
-            ? {
-                ...state.linkedPair,
-                imageEffect: state.linkedPair.imageEffect ?? "zoom-in",
-                motion: state.linkedPair.motion ?? [],
-                textStyle: normalizeTextStyle(state.linkedPair.textStyle),
-                fontOverride: state.linkedPair.fontOverride ?? null,
-                fontWeightOverride: state.linkedPair.fontWeightOverride ?? null,
-                fontSizeOverride: state.linkedPair.fontSizeOverride ?? null,
-                captionPosition: state.linkedPair.captionPosition ?? null,
-                frameId: normalizeFrameId(state.linkedPair.frameId),
-              }
-            : state.linkedPair,
+          scenes: normalizeImportedScenes(state.scenes),
+          linkedPair: normalizeImportedLinkedPair(state.linkedPair),
         };
       },
-      // Object URLs don't survive reload; strip asset from every scene and audio.src.
-      partialize: (s): PersistedState => ({
-        scenes: s.scenes.map(({ asset: _asset, ...rest }) => ({ ...rest, asset: null })),
-        activeSceneId: s.activeSceneId,
-        audio: s.audio ? { ...s.audio, src: null } : null,
-        finishes: s.finishes,
-        projectMode: s.projectMode,
-        projectTitle: s.projectTitle,
-        linkedPair: s.linkedPair
-          ? {
-              ...s.linkedPair,
-              audio: s.linkedPair.audio ? { ...s.linkedPair.audio, src: null } : null,
-              background: s.linkedPair.background
-                ? { ...s.linkedPair.background, src: null }
-                : null,
-            }
-          : null,
-      }),
+      partialize: (s) => stripObjectUrls(s),
     }
   )
 );

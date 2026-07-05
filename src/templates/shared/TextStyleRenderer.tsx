@@ -108,9 +108,8 @@ type StyleProps = {
 };
 
 const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames, baseStyle, styleOpacity }) => {
-  const per = durationInFrames / words.length;
-  const [exitStart, exitEnd] = safeRange(durationInFrames * 0.85, durationInFrames);
-  const exitOpacity = interpolate(frame, [exitStart, exitEnd], [1, 0], CLAMP);
+  const activeWindow = durationInFrames * 0.75;
+  const per = activeWindow / words.length;
   // Words render as separate flex items (not a single text node), so CSS
   // `word-spacing` has no whitespace to act on — the flex `gap` is what
   // actually controls the visible space between words here.
@@ -143,7 +142,7 @@ const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames
             style={{
               ...baseStyle,
               display: "inline-block",
-              opacity: inOpacity * exitOpacity * styleOpacity,
+              opacity: inOpacity * styleOpacity,
               transform: `translateY(${y}px)`,
             }}
           >
@@ -156,7 +155,8 @@ const FadeElegant: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames
 };
 
 const RevealMask: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, styleOpacity }) => {
-  const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
+  const activeWindow = durationInFrames * 0.75;
+  const { index, local, slot } = activeSlot(words.length, frame, activeWindow);
   const word = words[index];
   const [wipeStart, wipeEnd] = safeRange(0, slot * 0.5);
   const wipe = interpolate(local, [wipeStart, wipeEnd], [100, 0], CLAMP);
@@ -234,7 +234,8 @@ const LineByLine: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseS
 };
 
 const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, color, styleOpacity }) => {
-  const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
+  const activeWindow = durationInFrames * 0.75;
+  const { index, local, slot } = activeSlot(words.length, frame, activeWindow);
   const word = words[index];
   const [fadeStart, fadeEnd] = safeRange(0, Math.max(1, slot * 0.3));
   const fadeIn = interpolate(local, [fadeStart, fadeEnd], [0, 1], CLAMP);
@@ -263,7 +264,8 @@ const UnderlineWipe: React.FC<StyleProps> = ({ words, frame, durationInFrames, b
 };
 
 const SplitReveal: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, styleOpacity }) => {
-  const { index, local, slot } = activeSlot(words.length, frame, durationInFrames);
+  const activeWindow = durationInFrames * 0.75;
+  const { index, local, slot } = activeSlot(words.length, frame, activeWindow);
   const word = words[index];
   const [revealStart, revealEnd] = safeRange(0, Math.max(1, slot * 0.5));
   const clip = interpolate(local, [revealStart, revealEnd], [100, 50], CLAMP);
