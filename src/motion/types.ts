@@ -1,4 +1,10 @@
-export type MotionId = "progress-bar" | "number-counter" | "countdown" | "ticker" | "step-badge";
+export type MotionId =
+  | "progress-bar"
+  | "number-counter"
+  | "countdown"
+  | "ticker"
+  | "step-badge"
+  | "code-block";
 
 export type ProgressBarConfig = { position: "top" | "bottom" };
 export type NumberCounterConfig = { startNumber: number; endNumber: number; prefix: string; suffix: string };
@@ -9,20 +15,28 @@ export type StepBadgeConfig = {
   totalSteps: number;
   position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 };
+export type CodeBlockConfig = {
+  code: string;
+  language: "python" | "sql" | "r" | "bash" | "js";
+  position: "top" | "center" | "bottom";
+  linesPerPage: number;
+};
 
 export type MotionConfig =
   | ProgressBarConfig
   | NumberCounterConfig
   | CountdownConfig
   | TickerConfig
-  | StepBadgeConfig;
+  | StepBadgeConfig
+  | CodeBlockConfig;
 
 export type ActiveMotion =
   | { id: "progress-bar"; config: ProgressBarConfig }
   | { id: "number-counter"; config: NumberCounterConfig }
   | { id: "countdown"; config: CountdownConfig }
   | { id: "ticker"; config: TickerConfig }
-  | { id: "step-badge"; config: StepBadgeConfig };
+  | { id: "step-badge"; config: StepBadgeConfig }
+  | { id: "code-block"; config: CodeBlockConfig };
 
 export type MotionMeta = {
   id: MotionId;
@@ -37,6 +51,7 @@ export const MOTION_GRAPHICS: MotionMeta[] = [
   { id: "countdown", label: "Countdown", description: "Big centered countdown numbers" },
   { id: "ticker", label: "Ticker", description: "Scrolling text bar" },
   { id: "step-badge", label: "Step Badge", description: "\"Step X / Y\" pill label" },
+  { id: "code-block", label: "Code Block", description: "Syntax highlighted floating code snippet" },
 ];
 
 // Central defaults so `toggleMotion` (and any future caller) can insert a
@@ -47,6 +62,12 @@ export const MOTION_DEFAULTS: { [K in MotionId]: Extract<ActiveMotion, { id: K }
   countdown: { startFrom: 3 },
   ticker: { text: "Breaking News", direction: "left", position: "bottom" },
   "step-badge": { stepNumber: 1, totalSteps: 3, position: "top-right" },
+  "code-block": {
+    code: "import pandas as pd\ndf = pd.read_csv('data.csv')\ndf.head()",
+    language: "python",
+    position: "center",
+    linesPerPage: 8,
+  },
 };
 
 export function defaultMotionFor(id: MotionId): ActiveMotion {

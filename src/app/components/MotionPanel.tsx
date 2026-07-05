@@ -4,6 +4,7 @@ import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "./EmptyTargetState";
 import { SceneSelector } from "./SceneSelector";
 import { MOTION_GRAPHICS, type ActiveMotion, type MotionConfig } from "../../motion/types";
+import { CodeEditorModal } from "../../motion/components/CodeEditorModal";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="space-y-2.5">
@@ -95,6 +96,8 @@ const MotionConfigFields: React.FC<{
   motion: ActiveMotion;
   onChange: (config: MotionConfig) => void;
 }> = ({ motion, onChange }) => {
+  const [codeEditorOpen, setCodeEditorOpen] = useState(false);
+
   switch (motion.id) {
     case "progress-bar":
       return (
@@ -182,6 +185,29 @@ const MotionConfigFields: React.FC<{
           />
         </div>
       );
+    case "code-block": {
+      const previewLines = motion.config.code.split("\n").slice(0, 2).join("\n");
+      return (
+        <div className="space-y-2">
+          <div className="truncate whitespace-pre rounded-lg border border-rim bg-surface px-2 py-1.5 font-mono text-[11px] text-muted">
+            {previewLines}
+          </div>
+          <button
+            onClick={() => setCodeEditorOpen(true)}
+            className="w-full rounded-lg border border-rim bg-surface px-3 py-1.5 text-[12px] text-zinc-200 transition hover:border-accent-purple hover:text-zinc-100"
+          >
+            Edit Code
+          </button>
+          {codeEditorOpen && (
+            <CodeEditorModal
+              config={motion.config}
+              onSave={(config) => onChange(config)}
+              onClose={() => setCodeEditorOpen(false)}
+            />
+          )}
+        </div>
+      );
+    }
     default:
       return null;
   }

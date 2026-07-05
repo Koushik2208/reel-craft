@@ -5,6 +5,7 @@ import { NumberCounter } from "./components/NumberCounter";
 import { Countdown } from "./components/Countdown";
 import { Ticker } from "./components/Ticker";
 import { StepBadge } from "./components/StepBadge";
+import { CodeBlock } from "./components/CodeBlock";
 
 const MOTION_COMPONENTS: Record<MotionId, React.FC<{ config: any }>> = {
   "progress-bar": ProgressBar,
@@ -12,10 +13,18 @@ const MOTION_COMPONENTS: Record<MotionId, React.FC<{ config: any }>> = {
   countdown: Countdown,
   ticker: Ticker,
   "step-badge": StepBadge,
+  "code-block": CodeBlock,
 };
 
 // Bars/badges pinned to the frame edges first, expressive centerpiece effects on top.
-const STACK_ORDER: MotionId[] = ["progress-bar", "ticker", "step-badge", "number-counter", "countdown"];
+const STACK_ORDER: MotionId[] = [
+  "progress-bar",
+  "ticker",
+  "step-badge",
+  "code-block",
+  "number-counter",
+  "countdown",
+];
 
 export function RenderMotion({ motion }: { motion: ActiveMotion[] }): React.ReactElement {
   const active = new Map(motion.map((m) => [m.id, m]));
