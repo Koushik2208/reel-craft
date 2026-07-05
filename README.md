@@ -159,10 +159,9 @@ identically in preview and in the exported MP4.
 ### Transitions
 
 Manual Mode only. Each scene carries a transition that plays between it and the next scene, with
-a short / medium / long duration (10 / 20 / 30 frames). Nine are available: None (hard cut),
-Crossfade, Slide (left / right / up / down), Wipe, Paper Tear (organic SVG tear reveal), and
-Clapperboard (cinema clap reveal). Set per-scene, with an "Apply transition to all scenes"
-shortcut.
+a short / medium / long duration (10 / 20 / 30 frames). Eight are available: None (hard cut),
+Crossfade, Slide (left / right / up / down), Wipe, and Clapperboard (cinema clap reveal). Set
+per-scene, with an "Apply transition to all scenes" shortcut.
 
 ### Image Effects
 
@@ -287,8 +286,8 @@ generator or TTS tool before bringing the result into Reel Craft. Not a generati
   per photo + Polaroid or Floating Device frame.
 - **Tutorial / listicle with steps** → Manual Mode + Step Badge motion graphic per scene (Step 1/N,
   2/N, ...) + Progress Bar to show overall position.
-- **Cinematic scene changes** → Manual Mode + Clapperboard or Paper Tear transition between scenes
-  (long duration) for a dramatic beat, or Crossfade for a subtler cut.
+- **Cinematic scene changes** → Manual Mode + Clapperboard transition between scenes (long
+  duration) for a dramatic beat, or Crossfade for a subtler cut.
 
 ## Rendering
 

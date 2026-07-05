@@ -10,7 +10,6 @@ import { sceneDurationInFrames, type Scene, type ProjectAudio, type CinematicFin
 import { getAudioVolumeAtFrame } from "../../templates/shared/audioFade";
 import { GrainOverlay, VignetteOverlay, LetterboxOverlay } from "./CinematicFinishes";
 import { DEFAULT_TRANSITION, TRANSITION_DURATION_FRAMES, type TransitionId } from "../../transitions/types";
-import { paperTear } from "../../transitions/PaperTear";
 import { clapperboardTransition } from "../../transitions/ClapperboardTransition";
 
 export type SceneSeriesProps = { scenes: Scene[]; audio?: ProjectAudio; finishes?: CinematicFinishes };
@@ -39,8 +38,6 @@ function getPresentationForTransition(id: TransitionId): TransitionPresentation<
       return slide({ direction: "from-top" });
     case "wipe":
       return wipe({ direction: "from-left" });
-    case "paper-tear":
-      return paperTear();
     case "clapperboard":
       return clapperboardTransition();
     case "none":

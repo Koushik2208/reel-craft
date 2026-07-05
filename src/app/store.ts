@@ -750,7 +750,7 @@ export const useStore = create<State>()(
     }),
     {
       name: "reelcraft",
-      version: 7,
+      version: 8,
       // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
       // fields; backfill them so components can safely assume they're always set.
       // Version 3 also replaces `linkedPair.captionStyle` with the unified
@@ -768,6 +768,8 @@ export const useStore = create<State>()(
       // Version 7 re-runs that same backfill: dev builds mid-migration could
       // have persisted version-6 state where `transition` was still missing,
       // which then skipped migration on later loads since the version matched.
+      // Version 8 removes the "paper-tear" transition — any scene still
+      // referencing it falls back to "none".
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
           scenes: (Omit<
@@ -806,6 +808,8 @@ export const useStore = create<State>()(
         const normalizeTextStyle = (t: string | undefined): TextStyle =>
           t && validTextStyleIds.includes(t) ? (t as TextStyle) : DEFAULT_TEXT_STYLE;
         const normalizeFrameId = (f: string): FrameId => (f === "clapperboard" ? "none" : (f as FrameId));
+        const normalizeTransition = (t: SceneTransition | undefined): SceneTransition =>
+          !t || (t.id as string) === "paper-tear" ? DEFAULT_TRANSITION : t;
         return {
           ...state,
           scenes: state.scenes.map((s) => ({
@@ -819,7 +823,7 @@ export const useStore = create<State>()(
             fontSizeOverride: s.fontSizeOverride ?? null,
             captionPosition: s.captionPosition ?? null,
             frameId: normalizeFrameId(s.frameId),
-            transition: s.transition ?? DEFAULT_TRANSITION,
+            transition: normalizeTransition(s.transition),
           })),
           linkedPair: state.linkedPair
             ? {

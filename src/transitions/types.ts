@@ -6,7 +6,6 @@ export type TransitionId =
   | "slide-up"
   | "slide-down"
   | "wipe"
-  | "paper-tear"
   | "clapperboard";
 
 export type TransitionDuration = "short" | "medium" | "long";
@@ -43,6 +42,5 @@ export const TRANSITIONS: TransitionMeta[] = [
   { id: "slide-up", label: "Slide Up", description: "Next scene pushes in from bottom" },
   { id: "slide-down", label: "Slide Down", description: "Next scene pushes in from top" },
   { id: "wipe", label: "Wipe", description: "Directional clip-path wipe" },
-  { id: "paper-tear", label: "Paper Tear", description: "Organic SVG tear reveal" },
   { id: "clapperboard", label: "Clapperboard", description: "Cinema clap reveal" },
 ];

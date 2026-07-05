@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "studio": "remotion studio src/remotion.ts",
     "render": "remotion render src/remotion.ts",
-    "generate-favicon": "node scripts/generate-favicon.js"
+    "generate-favicon": "node scripts/generate-favicon.js",
+    "generate-transition-assets": "node scripts/generate-transition-assets.js"
   },
   "dependencies": {
     "@remotion/google-fonts": "^4.0.447",
