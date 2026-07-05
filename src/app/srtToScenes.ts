@@ -3,6 +3,7 @@ import type { SrtEntry } from "./srtParser";
 import { MAX_CHARS_PER_SCENE, splitTextIntoScenes } from "../templates/shared/textSplit";
 import { FPS } from "../templates/shared/timing";
 import { TEMPLATES } from "../templates/registry";
+import { DEFAULT_TRANSITION } from "../transitions/types";
 
 // Mirrors MANUAL_MIN in store.ts — manual durations are never allowed below this floor.
 const MANUAL_MIN_FRAMES = Math.round(1.5 * FPS);
@@ -37,6 +38,7 @@ function makeGeneratedScene(
     fontWeightOverride: defaultScene.fontWeightOverride ?? null,
     fontSizeOverride: defaultScene.fontSizeOverride ?? null,
     captionPosition: defaultScene.captionPosition ?? null,
+    transition: defaultScene.transition ?? DEFAULT_TRANSITION,
   };
 }
 

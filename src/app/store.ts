@@ -12,6 +12,7 @@ import type { CaptionPosition, TextStyle } from "../templates/shared/textStyles"
 import { DEFAULT_TEXT_STYLE, TEXT_STYLE_IDS } from "../templates/shared/textStyles";
 import type { ActiveMotion, MotionConfig, MotionId } from "../motion/types";
 import { defaultMotionFor } from "../motion/types";
+import { DEFAULT_TRANSITION, type SceneTransition } from "../transitions/types";
 
 export type { ImageEffect, TextStyle };
 
@@ -140,6 +141,7 @@ export type Scene = {
   fontWeightOverride: number | null;
   fontSizeOverride: number | null;
   captionPosition: CaptionPosition | null;
+  transition: SceneTransition;
 };
 
 const MANUAL_MIN = Math.round(1.5 * FPS);
@@ -171,6 +173,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     fontWeightOverride: null,
     fontSizeOverride: null,
     captionPosition: null,
+    transition: DEFAULT_TRANSITION,
     ...overrides,
   };
 }
@@ -246,6 +249,7 @@ type State = {
   setFontWeightOverride: (weight: number | null) => void;
   setFontSizeOverride: (size: number | null) => void;
   setCaptionPosition: (position: CaptionPosition | null) => void;
+  setTransition: (transition: SceneTransition) => void;
   toggleOverlay: (id: OverlayId) => void;
   setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
   toggleMotion: (id: MotionId) => void;
@@ -259,6 +263,7 @@ type State = {
   applyMotionToAllScenes: (sourceId: string) => void;
   applyImageEffectToAllScenes: (sourceId: string) => void;
   applyTextStyleToAllScenes: (sourceId: string) => void;
+  applyTransitionToAllScenes: (sourceId: string) => void;
   setAudio: (file: File) => Promise<void>;
   setAudioTrim: (seconds: number) => void;
   setAudioFadeIn: (seconds: number) => void;
@@ -540,6 +545,9 @@ export const useStore = create<State>()(
       setCaptionPosition: (captionPosition) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { captionPosition }) })),
 
+      setTransition: (transition) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { transition }) })),
+
       toggleOverlay: (id) =>
         set((s) => {
           const active = s.scenes.find((sc) => sc.id === s.activeSceneId);
@@ -730,10 +738,19 @@ export const useStore = create<State>()(
           ),
         });
       },
+
+      applyTransitionToAllScenes: (sourceId) => {
+        const { scenes } = get();
+        const source = scenes.find((s) => s.id === sourceId);
+        if (!source) return;
+        set({
+          scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, transition: source.transition })),
+        });
+      },
     }),
     {
       name: "reelcraft",
-      version: 5,
+      version: 7,
       // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
       // fields; backfill them so components can safely assume they're always set.
       // Version 3 also replaces `linkedPair.captionStyle` with the unified
@@ -746,11 +763,16 @@ export const useStore = create<State>()(
       // Version 5 unregisters the "clapperboard" frame (moved to the
       // transitions system) — any scene/linkedPair still referencing it
       // falls back to "none".
+      // Version 6 adds the per-scene `transition` field — older scenes
+      // predate it and backfill to DEFAULT_TRANSITION.
+      // Version 7 re-runs that same backfill: dev builds mid-migration could
+      // have persisted version-6 state where `transition` was still missing,
+      // which then skipped migration on later loads since the version matched.
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
           scenes: (Omit<
             Scene,
-            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId"
+            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId" | "transition"
           > & {
             asset: null;
             overlays?: ActiveOverlay[];
@@ -762,6 +784,7 @@ export const useStore = create<State>()(
             fontSizeOverride?: number | null;
             captionPosition?: CaptionPosition | null;
             frameId: string;
+            transition?: SceneTransition;
           })[];
           linkedPair:
             | (Omit<
@@ -796,6 +819,7 @@ export const useStore = create<State>()(
             fontSizeOverride: s.fontSizeOverride ?? null,
             captionPosition: s.captionPosition ?? null,
             frameId: normalizeFrameId(s.frameId),
+            transition: s.transition ?? DEFAULT_TRANSITION,
           })),
           linkedPair: state.linkedPair
             ? {

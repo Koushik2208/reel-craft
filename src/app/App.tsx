@@ -9,6 +9,7 @@ import { StylePage } from "./pages/StylePage";
 import { FramesPanel } from "./components/FramesPanel";
 import { OverlaysPanel } from "./components/OverlaysPanel";
 import { MotionPanel } from "./components/MotionPanel";
+import { TransitionsPanel } from "./components/TransitionsPanel";
 import { PromptsPanel } from "../prompts/PromptsPanel";
 
 export const App: React.FC = () => {
@@ -24,6 +25,7 @@ export const App: React.FC = () => {
           <Route path="frames" element={<FramesPanel />} />
           <Route path="overlays" element={<OverlaysPanel />} />
           <Route path="motion" element={<MotionPanel />} />
+          <Route path="transitions" element={<TransitionsPanel />} />
           <Route path="prompts" element={<PromptsPanel />} />
         </Route>
       </Routes>

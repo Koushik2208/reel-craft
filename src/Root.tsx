@@ -5,6 +5,7 @@ import { TEMPLATES } from "./templates/registry";
 import { FPS, WIDTH, HEIGHT } from "./templates/shared/timing";
 import type { Scene } from "./app/store";
 import { GreenScreenScene } from "./frames/GreenScreenScene";
+import { DEFAULT_TRANSITION } from "./transitions/types";
 
 // Default scenes for CLI / Studio. Override via --props or calculateMetadata.
 const defaultScenes: Scene[] = [
@@ -27,6 +28,7 @@ const defaultScenes: Scene[] = [
     fontWeightOverride: null,
     fontSizeOverride: null,
     captionPosition: null,
+    transition: DEFAULT_TRANSITION,
   },
   {
     id: "scene-2",
@@ -47,6 +49,7 @@ const defaultScenes: Scene[] = [
     fontWeightOverride: null,
     fontSizeOverride: null,
     captionPosition: null,
+    transition: DEFAULT_TRANSITION,
   },
 ];
 

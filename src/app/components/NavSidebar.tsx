@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Layers,
   Palette,
+  Shuffle,
   Smartphone,
   Sparkles,
   Type,
@@ -20,6 +21,7 @@ const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
   { to: "/frames", label: "Frames", icon: Smartphone },
   { to: "/overlays", label: "Overlays", icon: Sparkles },
   { to: "/motion", label: "Motion", icon: Zap },
+  { to: "/transitions", label: "Transitions", icon: Shuffle },
   { to: "/prompts", label: "Prompts", icon: Wand2 },
 ];
 

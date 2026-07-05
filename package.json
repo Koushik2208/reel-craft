@@ -15,6 +15,7 @@
     "@remotion/google-fonts": "^4.0.447",
     "@remotion/media": "^4.0.447",
     "@remotion/player": "^4.0.447",
+    "@remotion/transitions": "^4.0.484",
     "@remotion/web-renderer": "^4.0.447",
     "gsap": "^3.15.0",
     "lucide-react": "^0.439.0",
