@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   Upload,
   X,
   Check,
   ChevronUp,
   ChevronDown,
-  ChevronRight,
   Copy,
   Trash2,
   Plus,
@@ -19,7 +18,10 @@ import {
   Download,
   Frame as FrameIcon,
   FileText,
+  Pencil,
+  Layers,
 } from "lucide-react";
+import type { EditorPreviewContext } from "../components/editorPreviewContext";
 import { useStore, sceneDurationInFrames, type CinematicFinishes, type Scene } from "../store";
 import { TEMPLATES } from "../../templates/registry";
 import { FPS } from "../../templates/shared/timing";
@@ -46,6 +48,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode; hint?: strin
 
 export const SceneListPage: React.FC = () => {
   const navigate = useNavigate();
+  const { sceneFocusPreview, setSceneFocusPreview } = useOutletContext<EditorPreviewContext>();
   const {
     scenes,
     activeSceneId,
@@ -121,9 +124,14 @@ export const SceneListPage: React.FC = () => {
     [setAudio]
   );
 
-  const goToScene = (id: string) => {
+  const selectScene = (id: string) => {
     setActiveScene(id);
-    navigate(`/editor/scene/${id}`);
+    setSceneFocusPreview(true);
+  };
+
+  const editScene = (id: string) => {
+    setActiveScene(id);
+    navigate("/content");
   };
 
   useEffect(() => {
@@ -144,7 +152,18 @@ export const SceneListPage: React.FC = () => {
         <h2 className="text-sm font-semibold text-zinc-100">Scenes</h2>
         <ModeSwitcher />
       </div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between gap-2">
+        {sceneFocusPreview ? (
+          <button
+            onClick={() => setSceneFocusPreview(false)}
+            className="flex items-center gap-1 text-[12px] text-muted transition hover:text-zinc-200"
+          >
+            <Layers size={13} />
+            Show full sequence
+          </button>
+        ) : (
+          <span className="text-[12px] text-muted/70">Previewing full sequence</span>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSrtModalOpen(true)}
@@ -182,11 +201,13 @@ export const SceneListPage: React.FC = () => {
           return (
             <div
               key={scene.id}
-              onClick={() => goToScene(scene.id)}
+              onClick={() => selectScene(scene.id)}
               className={`group flex cursor-pointer flex-col gap-2 rounded-2xl border px-3.5 py-3 shadow-rim transition ${
-                isActive
+                isActive && sceneFocusPreview
                   ? "border-accent-purple/50 bg-accent-purple/10"
-                  : "border-rim bg-surface hover:border-accent-purple"
+                  : isActive
+                    ? "border-accent-purple/30 bg-surface hover:border-accent-purple"
+                    : "border-rim bg-surface hover:border-accent-purple"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -219,12 +240,13 @@ export const SceneListPage: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    goToScene(scene.id);
+                    editScene(scene.id);
                   }}
-                  title="Edit scene"
-                  className="shrink-0 rounded-lg p-1.5 text-muted transition hover:bg-rim/60 hover:text-zinc-100"
+                  title="Edit scene content"
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-rim px-2 py-1.5 text-muted transition hover:border-accent-purple hover:bg-rim/60 hover:text-zinc-100"
                 >
-                  <ChevronRight size={16} />
+                  <Pencil size={13} />
+                  <span className="text-[11px]">Edit</span>
                 </button>
               </div>
 
@@ -322,8 +344,8 @@ export const SceneListPage: React.FC = () => {
           )}
         </button>
         <p className="text-center text-[11px] leading-snug text-muted/70">
-          Copies the active scene's template, look, background, and layer mode to every other
-          scene.
+          Copies the active scene's template, look, background, layer mode, and text style
+          (font, color, size & position) to every other scene.
         </p>
       </div>
 

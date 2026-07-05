@@ -1,44 +1,38 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 
 export type GradientBorderProps = { children: React.ReactNode; width: number; height: number };
 
-// Border thickness anchored to a 1080px-wide reference (~3% ≈ 32px). The
-// outer and inner corner radii share the same center so the ring has no
-// seams at the corners.
-export const GradientBorder: React.FC<GradientBorderProps> = ({ children, width }) => {
-  const thickness = width * 0.03;
-  const gradient = "linear-gradient(135deg, #FF3D9A, #7B5CF0, #00D4FF)";
-  const glow = "0 0 32px rgba(255,61,154,0.6), 0 0 64px rgba(123,92,240,0.4)";
-  const outerRadius = thickness * 2;
-  const innerRadius = outerRadius - thickness;
+type Corner = { position: string; color: string };
+
+const CORNERS: Corner[] = [
+  { position: "0% 0%", color: "255,61,154" }, // pink, top-left
+  { position: "100% 0%", color: "123,92,240" }, // purple, top-right
+  { position: "100% 100%", color: "0,212,255" }, // cyan, bottom-right
+  { position: "0% 100%", color: "123,92,240" }, // purple, bottom-left
+];
+
+// Four corner glows breathing at independent phases, layered above the
+// content. Content fills the canvas at full size — no reduction.
+export const GradientBorder: React.FC<GradientBorderProps> = ({ children }) => {
+  const frame = useCurrentFrame();
 
   return (
     <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          borderRadius: outerRadius,
-          background: gradient,
-          boxShadow: glow,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: thickness,
-            left: thickness,
-            right: thickness,
-            bottom: thickness,
-            borderRadius: innerRadius,
-            overflow: "hidden",
-            clipPath: `inset(0px round ${innerRadius}px)`,
-          }}
-        >
-          {children}
-        </div>
-      </div>
+      <AbsoluteFill>{children}</AbsoluteFill>
+      <AbsoluteFill style={{ pointerEvents: "none" }}>
+        {CORNERS.map((corner, i) => {
+          const opacity = Math.sin(frame / 45 + i * 1.2) * 0.15 + 0.35;
+          return (
+            <AbsoluteFill
+              key={i}
+              style={{
+                background: `radial-gradient(circle at ${corner.position}, rgba(${corner.color},${opacity}) 0%, transparent 30%)`,
+              }}
+            />
+          );
+        })}
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };

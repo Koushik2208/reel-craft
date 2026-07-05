@@ -18,8 +18,8 @@ export const App: React.FC = () => {
         <Route index element={<LandingPage />} />
         <Route element={<AppLayout />}>
           <Route path="editor" element={<SceneListPage />} />
-          <Route path="editor/scene/:sceneId" element={<ScenePage />} />
           <Route path="editor/linked" element={<LinkedPage />} />
+          <Route path="content" element={<ScenePage />} />
           <Route path="style" element={<StylePage />} />
           <Route path="frames" element={<FramesPanel />} />
           <Route path="overlays" element={<OverlaysPanel />} />

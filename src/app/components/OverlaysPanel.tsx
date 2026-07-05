@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Check, Paintbrush } from "lucide-react";
-import { useStore } from "../store";
 import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "./EmptyTargetState";
+import { SceneSelector } from "./SceneSelector";
 import { OVERLAYS, type OverlayIntensity } from "../../overlays/types";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -15,7 +15,6 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 const INTENSITY_LEVELS: OverlayIntensity[] = ["low", "medium", "high"];
 
 export const OverlaysPanel: React.FC = () => {
-  const { scenes, activeSceneId, setActiveScene } = useStore();
   const style = useActiveStyle();
 
   const [applied, setApplied] = useState(false);
@@ -32,29 +31,7 @@ export const OverlaysPanel: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-7">
-      {/* ── Scene selector (manual mode only) ── */}
-      {style.mode === "manual" && scenes.length > 1 && (
-        <Section title="Scenes">
-          <div className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto pb-1">
-            {scenes.map((scene, idx) => {
-              const isActive = scene.id === activeSceneId;
-              return (
-                <button
-                  key={scene.id}
-                  onClick={() => setActiveScene(scene.id)}
-                  className={`shrink-0 snap-start rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
-                    isActive
-                      ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
-                      : "border-rim bg-surface text-muted hover:border-accent-purple"
-                  }`}
-                >
-                  Scene {idx + 1}
-                </button>
-              );
-            })}
-          </div>
-        </Section>
-      )}
+      <SceneSelector />
 
       {/* ── Active overlays summary ── */}
       {style.overlays.length > 0 && (

@@ -1,6 +1,8 @@
 import React from "react";
 import type { FrameId } from "./types";
 import { MinimalBezel } from "./components/MinimalBezel";
+import { SquareBezel } from "./components/SquareBezel";
+import { LandscapeBezel } from "./components/LandscapeBezel";
 import { BrowserWindow } from "./components/BrowserWindow";
 import { GradientBorder } from "./components/GradientBorder";
 import { NeonGlow } from "./components/NeonGlow";
@@ -10,6 +12,11 @@ import { DarkSpotlight } from "./components/DarkSpotlight";
 import { CinematicScope } from "./components/CinematicScope";
 import { TvFrame } from "./components/TvFrame";
 import { FloatingDevice } from "./components/FloatingDevice";
+import { NeonSign } from "./components/NeonSign";
+import { ArchPortal } from "./components/ArchPortal";
+import { VintageProjector } from "./components/VintageProjector";
+import { StickyNote } from "./components/StickyNote";
+import { SplitScreen } from "./components/SplitScreen";
 
 export function wrapInFrame(
   frameId: FrameId,
@@ -22,6 +29,20 @@ export function wrapInFrame(
       <MinimalBezel width={width} height={height}>
         {children}
       </MinimalBezel>
+    );
+  }
+  if (frameId === "square-bezel") {
+    return (
+      <SquareBezel width={width} height={height}>
+        {children}
+      </SquareBezel>
+    );
+  }
+  if (frameId === "landscape-bezel") {
+    return (
+      <LandscapeBezel width={width} height={height}>
+        {children}
+      </LandscapeBezel>
     );
   }
   if (frameId === "browser-window") {
@@ -85,6 +106,41 @@ export function wrapInFrame(
       <FloatingDevice width={width} height={height}>
         {children}
       </FloatingDevice>
+    );
+  }
+  if (frameId === "neon-sign") {
+    return (
+      <NeonSign width={width} height={height}>
+        {children}
+      </NeonSign>
+    );
+  }
+  if (frameId === "arch-portal") {
+    return (
+      <ArchPortal width={width} height={height}>
+        {children}
+      </ArchPortal>
+    );
+  }
+  if (frameId === "vintage-projector") {
+    return (
+      <VintageProjector width={width} height={height}>
+        {children}
+      </VintageProjector>
+    );
+  }
+  if (frameId === "sticky-note") {
+    return (
+      <StickyNote width={width} height={height}>
+        {children}
+      </StickyNote>
+    );
+  }
+  if (frameId === "split-screen") {
+    return (
+      <SplitScreen width={width} height={height}>
+        {children}
+      </SplitScreen>
     );
   }
   return <>{children}</>;

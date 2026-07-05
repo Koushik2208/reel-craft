@@ -1,37 +1,45 @@
 import React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 
 export type MinimalBezelProps = { children: React.ReactNode; width: number; height: number };
 
-// Shell proportions anchored to a 1080x1920 reference: ~86px sides, ~58px
-// top, ~96px bottom -> inner screen ~908x1766.
+// Premium phone shell: pure black outer, large-radius content window
+// floating slightly above center, with a slow-pulsing ambient screen glow.
 export const MinimalBezel: React.FC<MinimalBezelProps> = ({ children, width, height }) => {
-  const sideThickness = (width * 86) / 1080;
-  const topThickness = (height * 58) / 1920;
-  const bottomThickness = (height * 96) / 1920;
-  const outerRadius = width * 0.1;
-  const innerRadius = Math.max(0, outerRadius - sideThickness * 0.5);
-  const innerWidth = width - sideThickness * 2;
-  const innerHeight = height - topThickness - bottomThickness;
+  const frame = useCurrentFrame();
+
+  const contentWidth = width * 0.78;
+  const contentHeight = height * 0.82;
+  const contentLeft = (width - contentWidth) / 2;
+  const contentTop = height * 0.09;
+  const contentRadius = contentWidth * 0.18;
+
+  const glowOpacity = Math.sin(frame / 40) * 0.03 + 0.06;
 
   return (
-    <AbsoluteFill
-      style={{
-        borderRadius: outerRadius,
-        backgroundColor: "#1A1A1F",
-        boxShadow: "0 0 0 2px #2A2A3A, 0 20px 60px rgba(0,0,0,0.8)",
-      }}
-    >
+    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
       <div
         style={{
           position: "absolute",
-          left: sideThickness,
-          top: topThickness,
-          width: innerWidth,
-          height: innerHeight,
-          borderRadius: innerRadius,
+          left: contentLeft - contentWidth * 0.15,
+          top: contentTop - contentHeight * 0.1,
+          width: contentWidth * 1.3,
+          height: contentHeight * 1.2,
+          borderRadius: "50%",
+          background: `radial-gradient(ellipse at center, rgba(255,255,255,${glowOpacity}) 0%, transparent 70%)`,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: contentLeft,
+          top: contentTop,
+          width: contentWidth,
+          height: contentHeight,
+          borderRadius: contentRadius,
           overflow: "hidden",
-          clipPath: `inset(0px round ${innerRadius}px)`,
+          clipPath: `inset(0px round ${contentRadius}px)`,
         }}
       >
         <AbsoluteFill>{children}</AbsoluteFill>
@@ -39,10 +47,23 @@ export const MinimalBezel: React.FC<MinimalBezelProps> = ({ children, width, hei
       <div
         style={{
           position: "absolute",
-          inset: 0,
-          borderRadius: outerRadius,
-          background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0) 35%)",
-          pointerEvents: "none",
+          left: width / 2 - 4,
+          top: height * 0.04 - 4,
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          backgroundColor: "#1A1A1A",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: width / 2 - 30,
+          bottom: height * 0.035 - 2,
+          width: 60,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: "#333",
         }}
       />
     </AbsoluteFill>

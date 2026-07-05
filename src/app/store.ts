@@ -721,6 +721,7 @@ export const useStore = create<State>()(
               : {
                   ...s,
                   textStyle: source.textStyle,
+                  textColorOverride: source.textColorOverride,
                   fontOverride: source.fontOverride,
                   fontWeightOverride: source.fontWeightOverride,
                   fontSizeOverride: source.fontSizeOverride,
@@ -732,7 +733,7 @@ export const useStore = create<State>()(
     }),
     {
       name: "reelcraft",
-      version: 4,
+      version: 5,
       // Older persisted scenes predate the `overlays`/`imageEffect`/`motion`
       // fields; backfill them so components can safely assume they're always set.
       // Version 3 also replaces `linkedPair.captionStyle` with the unified
@@ -742,11 +743,14 @@ export const useStore = create<State>()(
       // opinionated typographic identities, and adds the font/size/position
       // override fields — old ids don't exist anymore so they fall back to
       // the default, and the new override fields backfill to null (auto).
+      // Version 5 unregisters the "clapperboard" frame (moved to the
+      // transitions system) — any scene/linkedPair still referencing it
+      // falls back to "none".
       migrate: (persistedState) => {
         const state = persistedState as Omit<PersistedState, "scenes" | "linkedPair"> & {
           scenes: (Omit<
             Scene,
-            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition"
+            "asset" | "overlays" | "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId"
           > & {
             asset: null;
             overlays?: ActiveOverlay[];
@@ -757,11 +761,12 @@ export const useStore = create<State>()(
             fontWeightOverride?: number | null;
             fontSizeOverride?: number | null;
             captionPosition?: CaptionPosition | null;
+            frameId: string;
           })[];
           linkedPair:
             | (Omit<
                 NonNullable<PersistedState["linkedPair"]>,
-                "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition"
+                "imageEffect" | "motion" | "textStyle" | "fontOverride" | "fontWeightOverride" | "fontSizeOverride" | "captionPosition" | "frameId"
               > & {
                 imageEffect?: ImageEffect;
                 motion?: ActiveMotion[];
@@ -770,12 +775,14 @@ export const useStore = create<State>()(
                 fontWeightOverride?: number | null;
                 fontSizeOverride?: number | null;
                 captionPosition?: CaptionPosition | null;
+                frameId: string;
               })
             | null;
         };
         const validTextStyleIds: readonly string[] = TEXT_STYLE_IDS;
         const normalizeTextStyle = (t: string | undefined): TextStyle =>
           t && validTextStyleIds.includes(t) ? (t as TextStyle) : DEFAULT_TEXT_STYLE;
+        const normalizeFrameId = (f: string): FrameId => (f === "clapperboard" ? "none" : (f as FrameId));
         return {
           ...state,
           scenes: state.scenes.map((s) => ({
@@ -788,6 +795,7 @@ export const useStore = create<State>()(
             fontWeightOverride: s.fontWeightOverride ?? null,
             fontSizeOverride: s.fontSizeOverride ?? null,
             captionPosition: s.captionPosition ?? null,
+            frameId: normalizeFrameId(s.frameId),
           })),
           linkedPair: state.linkedPair
             ? {
@@ -799,6 +807,7 @@ export const useStore = create<State>()(
                 fontWeightOverride: state.linkedPair.fontWeightOverride ?? null,
                 fontSizeOverride: state.linkedPair.fontSizeOverride ?? null,
                 captionPosition: state.linkedPair.captionPosition ?? null,
+                frameId: normalizeFrameId(state.linkedPair.frameId),
               }
             : state.linkedPair,
         };

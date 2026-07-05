@@ -1,19 +1,11 @@
-import React, { useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Upload,
-  X,
-  Clock,
-  Scissors,
-  Trash2,
-} from "lucide-react";
+import React, { useRef } from "react";
+import { Upload, X, Clock, Scissors, Trash2 } from "lucide-react";
 import { useStore, sceneDurationInFrames } from "../store";
 import { TEMPLATES } from "../../templates/registry";
 import { FPS } from "../../templates/shared/timing";
 import { splitTextIntoScenes, MAX_CHARS_PER_SCENE } from "../../templates/shared/textSplit";
+import { SceneSelector } from "../components/SceneSelector";
+import { EmptyTargetState } from "../components/EmptyTargetState";
 
 const Section: React.FC<{ title: string; children: React.ReactNode; hint?: string }> = ({
   title,
@@ -30,12 +22,10 @@ const Section: React.FC<{ title: string; children: React.ReactNode; hint?: strin
 );
 
 export const ScenePage: React.FC = () => {
-  const { sceneId } = useParams<{ sceneId: string }>();
-  const navigate = useNavigate();
   const {
     scenes,
     activeSceneId,
-    setActiveScene,
+    projectMode,
     setText,
     setAsset,
     clearAsset,
@@ -45,19 +35,6 @@ export const ScenePage: React.FC = () => {
     removeScene,
   } = useStore();
 
-  const scene = scenes.find((s) => s.id === sceneId);
-  const idx = scenes.findIndex((s) => s.id === sceneId);
-
-  useEffect(() => {
-    if (!scene) {
-      navigate("/editor", { replace: true });
-      return;
-    }
-    if (activeSceneId !== scene.id) {
-      setActiveScene(scene.id);
-    }
-  }, [scene, activeSceneId, setActiveScene, navigate]);
-
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onFile = (file: File | undefined) => {
@@ -66,46 +43,25 @@ export const ScenePage: React.FC = () => {
     setAsset({ src: URL.createObjectURL(file), kind, name: file.name });
   };
 
-  if (!scene) return null;
+  if (projectMode === "linked") {
+    return (
+      <EmptyTargetState
+        message="Content editing isn't available in linked mode — text comes from your transcript."
+        linkTo="/editor/linked"
+        linkLabel="Go to Linked editor"
+      />
+    );
+  }
 
+  const scene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
   const meta = TEMPLATES[scene.template];
   const autoDurationFrames = sceneDurationInFrames({ ...scene, durationMode: "auto" });
   const manualInputFrames = scene.manualDurationInFrames ?? autoDurationFrames;
 
-  const prevScene = idx > 0 ? scenes[idx - 1] : null;
-  const nextScene = idx < scenes.length - 1 ? scenes[idx + 1] : null;
-
   return (
     <div className="flex flex-col gap-7">
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate("/editor")}
-          className="flex items-center gap-1.5 rounded-lg p-1.5 text-muted transition hover:bg-rim/60 hover:text-zinc-100"
-          title="Back to scene list"
-        >
-          <ArrowLeft size={16} />
-        </button>
-        <h2 className="text-sm font-semibold text-zinc-100">Scene {idx + 1}</h2>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => prevScene && navigate(`/editor/scene/${prevScene.id}`)}
-            disabled={!prevScene}
-            title="Previous scene"
-            className="rounded-lg p-1.5 text-muted transition hover:bg-rim/60 hover:text-zinc-100 disabled:opacity-25"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button
-            onClick={() => nextScene && navigate(`/editor/scene/${nextScene.id}`)}
-            disabled={!nextScene}
-            title="Next scene"
-            className="rounded-lg p-1.5 text-muted transition hover:bg-rim/60 hover:text-zinc-100 disabled:opacity-25"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
+      <h2 className="text-sm font-semibold text-zinc-100">Content</h2>
+      <SceneSelector />
 
       {/* ── Text ── */}
       <Section title="Text">

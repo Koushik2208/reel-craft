@@ -18,6 +18,7 @@ import {
 import { useStore } from "../store";
 import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "../components/EmptyTargetState";
+import { SceneSelector } from "../components/SceneSelector";
 import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
 import type { LayerMode, TemplateId } from "../../templates/schema";
 import { LANGUAGES } from "../../templates/shared/language";
@@ -164,6 +165,7 @@ export const StylePage: React.FC = () => {
   return (
     <div className="flex flex-col gap-7">
       <h2 className="text-sm font-semibold text-zinc-100">Style</h2>
+      <SceneSelector />
 
       {/* ── Template ── */}
       <Section title="Template">
@@ -446,7 +448,7 @@ export const StylePage: React.FC = () => {
             ) : (
               <>
                 <Paintbrush size={14} />
-                Apply style to all scenes
+                Apply text style to all scenes
               </>
             )}
           </button>

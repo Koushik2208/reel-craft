@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import type { EditorPreviewContext } from "./editorPreviewContext";
 import { Download, Loader2, Frame, Scan, SlidersHorizontal, X } from "lucide-react";
 import { useStore, linkedDurationInFrames } from "../store";
 import { PreviewStage } from "./PreviewStage";
@@ -11,6 +12,8 @@ import { PreviewModeProvider, type PreviewMode } from "../PreviewContext";
 
 type Status = "idle" | "rendering" | "error";
 
+const SCENE_SCOPED_PATHS = ["/content", "/style", "/frames", "/overlays", "/motion"];
+
 export const AppLayout: React.FC = () => {
   const { scenes, audio, finishes, projectMode, linkedPair, projectTitle } = useStore();
   const [status, setStatus] = useState<Status>("idle");
@@ -20,14 +23,33 @@ export const AppLayout: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const handleRef = useRef<RenderHandle | null>(null);
   const location = useLocation();
-  const previewMode: PreviewMode = location.pathname.startsWith("/editor/scene/")
-    ? "scene"
-    : "full";
+  const [sceneFocusPreview, setSceneFocusPreview] = useState(false);
+  const isEditorPath = location.pathname === "/editor";
+  const previewMode: PreviewMode =
+    SCENE_SCOPED_PATHS.includes(location.pathname) || (isEditorPath && sceneFocusPreview)
+      ? "scene"
+      : "full";
 
+  // Editor page always starts on the full-sequence preview; scene focus is a
+  // transient choice made by clicking a scene card, and resets on navigation away.
+  useEffect(() => {
+    if (!isEditorPath) setSceneFocusPreview(false);
+  }, [isEditorPath]);
+
+  // A scene is exportable if it has text OR any visual content that can stand
+  // on its own without it — a frame shell, overlays, motion graphics, or a
+  // background asset (e.g. a greenscreen scene dressed with overlays/frame).
   const hasContent =
     projectMode === "linked"
       ? !!linkedPair?.audio?.src
-      : scenes.some((s) => s.text.trim().length > 0);
+      : scenes.some(
+          (s) =>
+            s.text.trim().length > 0 ||
+            s.frameId !== "none" ||
+            s.overlays.length > 0 ||
+            s.motion.length > 0 ||
+            !!s.asset
+        );
 
   const render = useCallback(async () => {
     if (status === "rendering" || !hasContent) return;
@@ -99,7 +121,7 @@ export const AppLayout: React.FC = () => {
   const panelBody = (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 lg:px-6 lg:py-7">
-        <Outlet />
+        <Outlet context={{ sceneFocusPreview, setSceneFocusPreview } satisfies EditorPreviewContext} />
       </div>
 
       <div className="shrink-0 border-t border-rim bg-base/95 px-4 py-4 backdrop-blur lg:px-6">
