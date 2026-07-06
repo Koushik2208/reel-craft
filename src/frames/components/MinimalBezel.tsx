@@ -1,11 +1,21 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 
-export type MinimalBezelProps = { children: React.ReactNode; width: number; height: number };
+export type MinimalBezelProps = {
+  children: React.ReactNode;
+  width: number;
+  height: number;
+  bgColor?: string;
+};
 
 // Premium phone shell: pure black outer, large-radius content window
 // floating slightly above center, with a slow-pulsing ambient screen glow.
-export const MinimalBezel: React.FC<MinimalBezelProps> = ({ children, width, height }) => {
+export const MinimalBezel: React.FC<MinimalBezelProps> = ({
+  children,
+  width,
+  height,
+  bgColor = "#000000",
+}) => {
   const frame = useCurrentFrame();
 
   const contentWidth = width * 0.78;
@@ -17,7 +27,7 @@ export const MinimalBezel: React.FC<MinimalBezelProps> = ({ children, width, hei
   const glowOpacity = Math.sin(frame / 40) * 0.03 + 0.06;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+    <AbsoluteFill style={{ backgroundColor: bgColor }}>
       <div
         style={{
           position: "absolute",

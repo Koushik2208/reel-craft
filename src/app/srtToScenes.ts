@@ -30,6 +30,7 @@ function makeGeneratedScene(
     layerMode: defaultScene.layerMode ?? "full",
     textColorOverride: defaultScene.textColorOverride ?? null,
     frameId: defaultScene.frameId ?? "none",
+    frameGreenScreen: defaultScene.frameGreenScreen ?? false,
     overlays: defaultScene.overlays ?? [],
     motion: defaultScene.motion ?? [],
     imageEffect: defaultScene.imageEffect ?? "zoom-in",

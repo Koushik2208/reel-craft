@@ -13,6 +13,7 @@ import { WIDTH, HEIGHT } from "../../templates/shared/timing";
 export type CompositionProps = VideoProps & {
   template: TemplateId;
   frameId?: FrameId;
+  frameGreenScreen?: boolean;
   overlays?: ActiveOverlay[];
   motion?: ActiveMotion[];
 };
@@ -28,6 +29,7 @@ export type CompositionProps = VideoProps & {
 export const VideoComposition: React.FC<CompositionProps & { children?: React.ReactNode }> = ({
   template,
   frameId = "none",
+  frameGreenScreen = false,
   overlays = [],
   motion = [],
   children,
@@ -49,5 +51,5 @@ export const VideoComposition: React.FC<CompositionProps & { children?: React.Re
       <RenderMotion motion={motion} />
     </AbsoluteFill>
   );
-  return wrapInFrame(frameId, WIDTH, HEIGHT, content);
+  return wrapInFrame(frameId, WIDTH, HEIGHT, content, frameGreenScreen);
 };

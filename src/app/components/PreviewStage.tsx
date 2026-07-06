@@ -125,6 +125,7 @@ export const PreviewStage: React.FC<{
       layerMode: activeScene.layerMode ?? "full",
       textColorOverride: activeScene.textColorOverride ?? null,
       frameId: activeScene.frameId ?? "none",
+      frameGreenScreen: activeScene.frameGreenScreen ?? false,
       overlays: activeScene.overlays ?? [],
       motion: activeScene.motion ?? [],
       imageEffect: activeScene.imageEffect ?? "zoom-in",

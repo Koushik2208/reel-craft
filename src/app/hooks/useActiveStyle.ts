@@ -19,6 +19,7 @@ export type ActiveStyle =
       layerMode: LayerMode;
       imageEffect: ImageEffect;
       frameId: FrameId;
+      frameGreenScreen: boolean;
       overlays: ActiveOverlay[];
       hasBackground: boolean;
       applyStyleToAllScenes: (() => void) | null;
@@ -41,6 +42,7 @@ export type ActiveStyle =
       setFontSizeOverride: (s: number | null) => void;
       setCaptionPosition: (p: CaptionPosition | null) => void;
       setFrame: (id: FrameId) => void;
+      setFrameGreenScreen: (v: boolean) => void;
       applyFrameToAllScenes: (() => void) | null;
       toggleOverlay: (id: OverlayId) => void;
       setOverlayIntensity: (id: OverlayId, intensity: OverlayIntensity) => void;
@@ -88,6 +90,7 @@ export function useActiveStyle(): ActiveStyle {
       layerMode: pair.layerMode,
       imageEffect: pair.imageEffect,
       frameId: pair.frameId,
+      frameGreenScreen: pair.frameGreenScreen,
       overlays: pair.overlays,
       hasBackground: pair.background !== null,
       applyStyleToAllScenes: null,
@@ -111,6 +114,7 @@ export function useActiveStyle(): ActiveStyle {
       setFontSizeOverride: (s) => store.updateLinkedPairStyle({ fontSizeOverride: s }),
       setCaptionPosition: (p) => store.updateLinkedPairStyle({ captionPosition: p }),
       setFrame: (id) => store.updateLinkedPairStyle({ frameId: id }),
+      setFrameGreenScreen: (v) => store.updateLinkedPairStyle({ frameGreenScreen: v }),
       applyFrameToAllScenes: null,
       toggleOverlay: (id) => store.toggleLinkedOverlay(id),
       setOverlayIntensity: (id, intensity) => store.setLinkedOverlayIntensity(id, intensity),
@@ -142,6 +146,7 @@ export function useActiveStyle(): ActiveStyle {
     layerMode: scene.layerMode,
     imageEffect: scene.imageEffect,
     frameId: scene.frameId,
+    frameGreenScreen: scene.frameGreenScreen,
     overlays: scene.overlays,
     hasBackground: scene.asset !== null,
     applyStyleToAllScenes:
@@ -167,6 +172,7 @@ export function useActiveStyle(): ActiveStyle {
     setFontSizeOverride: store.setFontSizeOverride,
     setCaptionPosition: store.setCaptionPosition,
     setFrame: store.setFrame,
+    setFrameGreenScreen: store.setFrameGreenScreen,
     applyFrameToAllScenes: scenes.length > 1 ? () => store.applyFrameToAllScenes(scene.id) : null,
     toggleOverlay: store.toggleOverlay,
     setOverlayIntensity: store.setOverlayIntensity,

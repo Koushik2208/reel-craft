@@ -65,6 +65,7 @@ export type LinkedPair = {
   language: Language;
   textColorOverride: string | null;
   frameId: FrameId;
+  frameGreenScreen: boolean;
   overlays: ActiveOverlay[];
   motion: ActiveMotion[];
   layerMode: LayerMode;
@@ -99,6 +100,7 @@ function makeLinkedPair(overrides?: Partial<NonNullable<LinkedPair>>): NonNullab
     language: "en",
     textColorOverride: null,
     frameId: "none",
+    frameGreenScreen: false,
     overlays: [],
     motion: [],
     layerMode: "full",
@@ -133,6 +135,7 @@ export type Scene = {
   layerMode: LayerMode;
   textColorOverride: string | null;
   frameId: FrameId;
+  frameGreenScreen: boolean;
   overlays: ActiveOverlay[];
   motion: ActiveMotion[];
   imageEffect: ImageEffect;
@@ -165,6 +168,7 @@ function makeScene(overrides?: Partial<Scene>): Scene {
     layerMode: "full",
     textColorOverride: null,
     frameId: "none",
+    frameGreenScreen: false,
     overlays: [],
     motion: [],
     imageEffect: "zoom-in",
@@ -203,6 +207,7 @@ type State = {
         | "language"
         | "textColorOverride"
         | "frameId"
+        | "frameGreenScreen"
         | "overlays"
         | "motion"
         | "layerMode"
@@ -243,6 +248,7 @@ type State = {
   setLayerMode: (mode: LayerMode) => void;
   setTextColorOverride: (color: string | null) => void;
   setFrame: (id: FrameId) => void;
+  setFrameGreenScreen: (value: boolean) => void;
   setImageEffect: (effect: ImageEffect) => void;
   setTextStyle: (style: TextStyle) => void;
   setFontOverride: (font: string | null) => void;
@@ -331,6 +337,7 @@ type LooseScene = Omit<
   | "fontSizeOverride"
   | "captionPosition"
   | "frameId"
+  | "frameGreenScreen"
   | "transition"
 > & {
   asset?: unknown;
@@ -343,6 +350,7 @@ type LooseScene = Omit<
   fontSizeOverride?: number | null;
   captionPosition?: CaptionPosition | null;
   frameId: string;
+  frameGreenScreen?: boolean;
   transition?: SceneTransition;
 };
 
@@ -357,6 +365,7 @@ type LooseLinkedPair =
       | "fontSizeOverride"
       | "captionPosition"
       | "frameId"
+      | "frameGreenScreen"
     > & {
       imageEffect?: ImageEffect;
       motion?: ActiveMotion[];
@@ -366,6 +375,7 @@ type LooseLinkedPair =
       fontSizeOverride?: number | null;
       captionPosition?: CaptionPosition | null;
       frameId: string;
+      frameGreenScreen?: boolean;
     })
   | null;
 
@@ -392,6 +402,7 @@ function normalizeImportedScenes(scenes: LooseScene[]): Scene[] {
     fontSizeOverride: s.fontSizeOverride ?? null,
     captionPosition: s.captionPosition ?? null,
     frameId: normalizeFrameId(s.frameId),
+    frameGreenScreen: s.frameGreenScreen ?? false,
     transition: normalizeTransition(s.transition),
   }));
 }
@@ -410,6 +421,7 @@ function normalizeImportedLinkedPair(linkedPair: LooseLinkedPair): LinkedPair {
     fontSizeOverride: linkedPair.fontSizeOverride ?? null,
     captionPosition: linkedPair.captionPosition ?? null,
     frameId: normalizeFrameId(linkedPair.frameId),
+    frameGreenScreen: linkedPair.frameGreenScreen ?? false,
   };
 }
 
@@ -649,6 +661,9 @@ export const useStore = create<State>()(
       setFrame: (frameId) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { frameId }) })),
 
+      setFrameGreenScreen: (frameGreenScreen) =>
+        set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { frameGreenScreen }) })),
+
       setImageEffect: (imageEffect) =>
         set((s) => ({ scenes: patchActive(s.scenes, s.activeSceneId, { imageEffect }) })),
 
@@ -827,7 +842,11 @@ export const useStore = create<State>()(
         const source = scenes.find((s) => s.id === sourceId);
         if (!source) return;
         set({
-          scenes: scenes.map((s) => (s.id === sourceId ? s : { ...s, frameId: source.frameId })),
+          scenes: scenes.map((s) =>
+            s.id === sourceId
+              ? s
+              : { ...s, frameId: source.frameId, frameGreenScreen: source.frameGreenScreen }
+          ),
         });
       },
 

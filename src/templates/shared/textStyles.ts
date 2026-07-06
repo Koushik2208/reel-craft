@@ -21,7 +21,15 @@ export type AnimationKind =
   | "letter-expand"
   | "line-by-line"
   | "underline-wipe"
-  | "split-reveal";
+  | "split-reveal"
+  | "karaoke-highlight"
+  | "word-stamp"
+  | "typewriter"
+  | "neon-pulse"
+  | "sentence-block"
+  | "word-cascade"
+  | "glitch-reveal"
+  | "drop-cap";
 
 export const CAPTION_POSITIONS = ["top", "center", "bottom"] as const;
 export type CaptionPosition = (typeof CAPTION_POSITIONS)[number];
@@ -39,6 +47,14 @@ export const TEXT_STYLE_IDS = [
   "cinematic-title",
   "condensed",
   "dancing",
+  "karaoke",
+  "stamp",
+  "typewriter",
+  "neon-pulse",
+  "sentence-block",
+  "cascade",
+  "glitch",
+  "drop-cap",
 ] as const;
 
 export type TextStyle = (typeof TEXT_STYLE_IDS)[number];
@@ -202,6 +218,97 @@ export const TEXT_STYLES: TextStyleConfig[] = [
     fontSize: 66,
     letterSpacing: "0.04em",
     wordSpacing: "0.35em",
+    position: "center",
+  },
+  {
+    id: "karaoke",
+    label: "Karaoke",
+    description: "sing · along",
+    animation: "karaoke-highlight",
+    fontFamily: dmSans,
+    fontWeight: 700,
+    fontSize: 52,
+    letterSpacing: "0.02em",
+    position: "center",
+  },
+  {
+    id: "stamp",
+    label: "Word Stamp",
+    description: "bold · punch",
+    animation: "word-stamp",
+    fontFamily: montserrat,
+    fontWeight: 900,
+    fontSize: 80,
+    letterSpacing: "-0.01em",
+    textTransform: "uppercase",
+    position: "center",
+  },
+  {
+    id: "typewriter",
+    label: "Typewriter",
+    description: "type · click",
+    animation: "typewriter",
+    // monospace system font, no Google font needed
+    fontFamily: "Courier New",
+    fontWeight: 400,
+    fontSize: 44,
+    letterSpacing: "0.05em",
+    position: "center",
+  },
+  {
+    id: "neon-pulse",
+    label: "Neon Pulse",
+    description: "glow · pulse",
+    animation: "neon-pulse",
+    fontFamily: "Outfit",
+    fontWeight: 700,
+    fontSize: 56,
+    letterSpacing: "0.04em",
+    position: "center",
+  },
+  {
+    id: "sentence-block",
+    label: "Sentence Block",
+    description: "color · blocks",
+    animation: "sentence-block",
+    fontFamily: inter,
+    fontWeight: 600,
+    fontSize: 48,
+    letterSpacing: "0.01em",
+    position: "center",
+  },
+  {
+    id: "cascade",
+    label: "Color Cascade",
+    description: "rainbow · flow",
+    animation: "word-cascade",
+    fontFamily: fraunces,
+    fontWeight: 700,
+    fontSize: 56,
+    letterSpacing: "0.02em",
+    position: "center",
+  },
+  {
+    id: "glitch",
+    label: "Glitch",
+    description: "rgb · shift",
+    animation: "glitch-reveal",
+    fontFamily: bebas,
+    fontWeight: 400,
+    fontSize: 80,
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    position: "center",
+  },
+  {
+    id: "drop-cap",
+    label: "Drop Cap",
+    description: "editorial · large",
+    animation: "drop-cap",
+    fontFamily: cormorantGaramond,
+    fontWeight: 300,
+    fontSize: 48,
+    letterSpacing: "0.04em",
     position: "center",
   },
 ];

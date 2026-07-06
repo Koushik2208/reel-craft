@@ -287,6 +287,333 @@ const SplitReveal: React.FC<StyleProps> = ({ words, frame, durationInFrames, bas
   );
 };
 
+const KaraokeHighlight: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, styleOpacity }) => {
+  const activeWindow = durationInFrames * 0.75;
+  const per = activeWindow / words.length;
+  const currentIndex = Math.min(words.length - 1, Math.max(0, Math.floor(frame / per)));
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: baseStyle.fontSize,
+        gap: "0.15em 0.4em",
+        maxWidth: "82%",
+        textAlign: "center",
+      }}
+    >
+      {words.map((word, i) => {
+        const isCurrent = i === currentIndex;
+        const isPast = i < currentIndex;
+        return (
+          <span
+            key={i}
+            style={{
+              ...baseStyle,
+              display: "inline-block",
+              opacity: (isCurrent ? 1 : isPast ? 0.4 : 0.25) * styleOpacity,
+              backgroundColor: isCurrent ? "rgba(255,180,0,0.85)" : "transparent",
+              color: isCurrent ? "#000000" : baseStyle.color,
+              borderRadius: isCurrent ? 4 : 0,
+              padding: isCurrent ? "2px 8px" : 0,
+            }}
+          >
+            {word}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+const WordStamp: React.FC<StyleProps> = ({ words, frame, fps, durationInFrames, baseStyle, styleOpacity }) => {
+  const activeWindow = durationInFrames * 0.75;
+  const { index, local, slot } = activeSlot(words.length, frame, activeWindow);
+  const word = words[index];
+
+  const entrySpring = spring({ frame: local, fps, config: { damping: 8, mass: 1.2 } });
+  const entryScale = interpolate(entrySpring, [0, 1], [1.4, 1]);
+  const [inStart, inEnd] = safeRange(0, 4);
+  const inOpacity = interpolate(local, [inStart, inEnd], [0, 1], CLAMP);
+  const [outStart, outEnd] = safeRange(Math.max(0, slot - 4), slot);
+  const outScale = interpolate(local, [outStart, outEnd], [1, 0.8], CLAMP);
+  const outOpacity = interpolate(local, [outStart, outEnd], [1, 0], CLAMP);
+  const scale = local < outStart ? entryScale : outScale;
+
+  return (
+    <div style={CENTER_BLOCK}>
+      <span
+        style={{
+          ...baseStyle,
+          display: "inline-block",
+          opacity: Math.min(inOpacity, outOpacity) * styleOpacity,
+          transform: `scale(${scale})`,
+        }}
+      >
+        {word}
+      </span>
+    </div>
+  );
+};
+
+const Typewriter: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle, color, styleOpacity }) => {
+  const activeWindow = durationInFrames * 0.75;
+  const totalChars = Math.max(1, text.length);
+  const charsToShow = Math.min(totalChars, Math.floor(frame / (activeWindow / totalChars)));
+  const visibleText = text.slice(0, charsToShow);
+  const cursorOpacity = frame % 20 < 10 ? 1 : 0;
+
+  return (
+    <div style={{ ...baseStyle, ...CENTER_BLOCK, opacity: styleOpacity }}>
+      {visibleText}
+      <span style={{ opacity: cursorOpacity, color }}>|</span>
+    </div>
+  );
+};
+
+const NeonPulse: React.FC<StyleProps> = ({ words, frame, durationInFrames, baseStyle, color, styleOpacity }) => {
+  const activeWindow = durationInFrames * 0.75;
+  const { index, local } = activeSlot(words.length, frame, activeWindow);
+  const word = words[index];
+  const [inStart, inEnd] = safeRange(0, 6);
+  const inOpacity = interpolate(local, [inStart, inEnd], [0, 1], CLAMP);
+  const intensity = Math.sin(frame * 0.3) * 0.5 + 0.8;
+  const textShadow = `0 0 ${10 * intensity}px ${color}, 0 0 ${20 * intensity}px ${color}, 0 0 ${40 * intensity}px rgba(255,61,154,0.6)`;
+
+  return (
+    <div style={CENTER_BLOCK}>
+      <span
+        style={{
+          ...baseStyle,
+          display: "inline-block",
+          color: "#FFFFFF",
+          textShadow,
+          opacity: inOpacity * styleOpacity,
+        }}
+      >
+        {word}
+      </span>
+    </div>
+  );
+};
+
+const SentenceBlock: React.FC<StyleProps> = ({ text, frame, durationInFrames, baseStyle, styleOpacity }) => {
+  const lines = splitIntoLines(text, 35);
+  const activeWindow = durationInFrames * 0.85;
+  const perLine = activeWindow / lines.length;
+  const activeLineIndex = Math.min(lines.length - 1, Math.floor(frame / perLine));
+  const local = frame - activeLineIndex * perLine;
+  const [bgStart, bgEnd] = safeRange(0, 8);
+  const activeBgScale = interpolate(local, [bgStart, bgEnd], [0, 1], CLAMP);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, opacity: styleOpacity }}>
+      {lines.map((line, i) => {
+        const isActive = i === activeLineIndex;
+        const isPast = i < activeLineIndex;
+        const bgScale = isActive ? activeBgScale : isPast ? 1 : 0;
+        const textColor = isActive || isPast ? "#0D0D12" : "rgba(255,255,255,0.35)";
+
+        return (
+          <div key={i} style={{ position: "relative" }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: 6,
+                backgroundColor: "#FFFFFF",
+                transform: `scaleX(${bgScale})`,
+                transformOrigin: "left",
+              }}
+            />
+            <span
+              style={{
+                ...baseStyle,
+                position: "relative",
+                zIndex: 1,
+                display: "inline-block",
+                padding: "4px 12px",
+                color: textColor,
+              }}
+            >
+              {line}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const CASCADE_PALETTE = ["#FF3D9A", "#FFB344", "#7B5CF0", "#00D4FF", "#44FF99"];
+
+const WordCascade: React.FC<StyleProps> = ({ words, frame, baseStyle, styleOpacity }) => {
+  const settledFrame = words.length * 3 + 10;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        fontSize: baseStyle.fontSize,
+        gap: "0.2em 0.5em",
+        maxWidth: "82%",
+        textAlign: "center",
+      }}
+    >
+      {words.map((word, i) => {
+        const [inStart, inEnd] = safeRange(i * 3, i * 3 + 8);
+        const inOpacity = interpolate(frame, [inStart, inEnd], [0, 1], CLAMP);
+        const color = CASCADE_PALETTE[i % CASCADE_PALETTE.length];
+        const nextColor = CASCADE_PALETTE[(i + 1) % CASCADE_PALETTE.length];
+        const shift = frame > settledFrame ? Math.sin(frame * 0.02 + i * 0.5) * 0.5 + 0.5 : 0;
+
+        return (
+          <span key={i} style={{ position: "relative", display: "inline-block" }}>
+            <span style={{ ...baseStyle, opacity: inOpacity * (1 - shift) * styleOpacity, color }}>{word}</span>
+            <span
+              style={{
+                ...baseStyle,
+                position: "absolute",
+                left: 0,
+                top: 0,
+                opacity: inOpacity * shift * styleOpacity,
+                color: nextColor,
+              }}
+            >
+              {word}
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+const GlitchReveal: React.FC<StyleProps> = ({ text, frame, baseStyle, styleOpacity }) => {
+  const [cleanStart, cleanEnd] = safeRange(20, 30);
+  const clean = interpolate(frame, [cleanStart, cleanEnd], [0, 1], CLAMP);
+  const glitchOpacity = (1 - clean) * styleOpacity;
+  const redX = Math.sin(frame * 3.7) * 6;
+  const greenX = Math.sin(frame * 2.1 + 1) * -4;
+  const blueX = Math.sin(frame * 4.3 + 2) * 8;
+  const showSlice = Math.sin(frame * 7.3) > 0.8;
+  const sliceY = Math.sin(frame * 5.1) * 200;
+
+  return (
+    <div style={{ position: "relative", ...CENTER_BLOCK }}>
+      <div
+        style={{
+          ...baseStyle,
+          color: "#FF0000",
+          opacity: 0.7 * glitchOpacity,
+          transform: `translateX(${redX}px)`,
+          mixBlendMode: "screen",
+        }}
+      >
+        {text}
+      </div>
+      <div
+        style={{
+          ...baseStyle,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          color: "#00FF00",
+          opacity: 0.7 * glitchOpacity,
+          transform: `translateX(${greenX}px)`,
+          mixBlendMode: "screen",
+        }}
+      >
+        {text}
+      </div>
+      <div
+        style={{
+          ...baseStyle,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          color: "#0000FF",
+          opacity: 0.7 * glitchOpacity,
+          transform: `translateX(${blueX}px)`,
+          mixBlendMode: "screen",
+        }}
+      >
+        {text}
+      </div>
+      <div
+        style={{
+          ...baseStyle,
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          color: "#FFFFFF",
+          opacity: clean * styleOpacity,
+        }}
+      >
+        {text}
+      </div>
+      {showSlice && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: `calc(50% + ${sliceY}px)`,
+            height: 1,
+            backgroundColor: "#FFFFFF",
+            opacity: 0.6 * glitchOpacity,
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const DropCap: React.FC<StyleProps> = ({ text, words, frame, fps, baseStyle, color, styleOpacity }) => {
+  const firstChar = words[0]?.[0] ?? text[0] ?? "";
+  const restOfText = text.slice(1);
+  const capSpring = spring({ frame, fps, config: { damping: 12, mass: 0.8 } });
+  const [restStart, restEnd] = safeRange(8, 28);
+  const restOpacity = interpolate(frame, [restStart, restEnd], [0, 1], CLAMP);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        maxWidth: "82%",
+        opacity: styleOpacity,
+      }}
+    >
+      <span
+        style={{
+          ...baseStyle,
+          fontSize: (baseStyle.fontSize as number) * 3,
+          lineHeight: 0.85,
+          marginRight: "0.05em",
+          color,
+          display: "inline-block",
+          transform: `scale(${capSpring})`,
+          transformOrigin: "left top",
+        }}
+      >
+        {firstChar}
+      </span>
+      <span style={{ ...baseStyle, lineHeight: 1.4, opacity: restOpacity }}>{restOfText}</span>
+    </div>
+  );
+};
+
 export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
   text,
   textStyle,
@@ -332,6 +659,30 @@ export const TextStyleRenderer: React.FC<TextStyleRendererProps> = ({
       break;
     case "split-reveal":
       content = <SplitReveal {...common} />;
+      break;
+    case "karaoke-highlight":
+      content = <KaraokeHighlight {...common} />;
+      break;
+    case "word-stamp":
+      content = <WordStamp {...common} />;
+      break;
+    case "typewriter":
+      content = <Typewriter {...common} />;
+      break;
+    case "neon-pulse":
+      content = <NeonPulse {...common} />;
+      break;
+    case "sentence-block":
+      content = <SentenceBlock {...common} />;
+      break;
+    case "word-cascade":
+      content = <WordCascade {...common} />;
+      break;
+    case "glitch-reveal":
+      content = <GlitchReveal {...common} />;
+      break;
+    case "drop-cap":
+      content = <DropCap {...common} />;
       break;
     case "fade-elegant":
     default:

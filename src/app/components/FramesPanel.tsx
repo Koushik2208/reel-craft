@@ -66,6 +66,11 @@ export const FramesPanel: React.FC = () => {
   }
 
   const frameId = style.frameId;
+  const supportsGreenScreen =
+    frameId === "minimal-bezel" ||
+    frameId === "square-bezel" ||
+    frameId === "landscape-bezel" ||
+    frameId === "floating-device";
 
   return (
     <div className="flex flex-col gap-7">
@@ -76,6 +81,20 @@ export const FramesPanel: React.FC = () => {
             : null,
         ].filter((o): o is ApplyOption => o !== null)}
       />
+
+      {supportsGreenScreen && (
+        <button
+          onClick={() => style.setFrameGreenScreen(!style.frameGreenScreen)}
+          aria-pressed={style.frameGreenScreen}
+          className={`flex items-center justify-center rounded-xl border px-3.5 py-2.5 text-center text-[12px] font-medium transition ${
+            style.frameGreenScreen
+              ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+              : "border-rim bg-surface text-muted hover:border-accent-purple"
+          }`}
+        >
+          Green screen background
+        </button>
+      )}
 
       {/* ── Frame picker ── */}
       <Section title="Frame">

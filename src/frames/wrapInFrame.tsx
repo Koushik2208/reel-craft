@@ -17,30 +17,38 @@ import { ArchPortal } from "./components/ArchPortal";
 import { VintageProjector } from "./components/VintageProjector";
 import { StickyNote } from "./components/StickyNote";
 import { SplitScreen } from "./components/SplitScreen";
+import { TerminalFrame } from "./components/TerminalFrame";
+import { DataDashboard } from "./components/DataDashboard";
+import { BreakingNews } from "./components/BreakingNews";
+import { PhoneNotification } from "./components/PhoneNotification";
+import { HologramFrame } from "./components/HologramFrame";
+import { MorphingShape } from "./components/MorphingShape";
+import { WaveformBorder } from "./components/WaveformBorder";
 
 export function wrapInFrame(
   frameId: FrameId,
   width: number,
   height: number,
-  children: React.ReactNode
+  children: React.ReactNode,
+  frameGreenScreen?: boolean
 ): React.ReactElement {
   if (frameId === "minimal-bezel") {
     return (
-      <MinimalBezel width={width} height={height}>
+      <MinimalBezel width={width} height={height} bgColor={frameGreenScreen ? "#00FF00" : undefined}>
         {children}
       </MinimalBezel>
     );
   }
   if (frameId === "square-bezel") {
     return (
-      <SquareBezel width={width} height={height}>
+      <SquareBezel width={width} height={height} bgColor={frameGreenScreen ? "#00FF00" : undefined}>
         {children}
       </SquareBezel>
     );
   }
   if (frameId === "landscape-bezel") {
     return (
-      <LandscapeBezel width={width} height={height}>
+      <LandscapeBezel width={width} height={height} bgColor={frameGreenScreen ? "#00FF00" : undefined}>
         {children}
       </LandscapeBezel>
     );
@@ -103,7 +111,7 @@ export function wrapInFrame(
   }
   if (frameId === "floating-device") {
     return (
-      <FloatingDevice width={width} height={height}>
+      <FloatingDevice width={width} height={height} bgColor={frameGreenScreen ? "#00FF00" : undefined}>
         {children}
       </FloatingDevice>
     );
@@ -141,6 +149,55 @@ export function wrapInFrame(
       <SplitScreen width={width} height={height}>
         {children}
       </SplitScreen>
+    );
+  }
+  if (frameId === "terminal") {
+    return (
+      <TerminalFrame width={width} height={height}>
+        {children}
+      </TerminalFrame>
+    );
+  }
+  if (frameId === "data-dashboard") {
+    return (
+      <DataDashboard width={width} height={height}>
+        {children}
+      </DataDashboard>
+    );
+  }
+  if (frameId === "breaking-news") {
+    return (
+      <BreakingNews width={width} height={height}>
+        {children}
+      </BreakingNews>
+    );
+  }
+  if (frameId === "phone-notification") {
+    return (
+      <PhoneNotification width={width} height={height}>
+        {children}
+      </PhoneNotification>
+    );
+  }
+  if (frameId === "hologram") {
+    return (
+      <HologramFrame width={width} height={height}>
+        {children}
+      </HologramFrame>
+    );
+  }
+  if (frameId === "morphing-shape") {
+    return (
+      <MorphingShape width={width} height={height}>
+        {children}
+      </MorphingShape>
+    );
+  }
+  if (frameId === "waveform-border") {
+    return (
+      <WaveformBorder width={width} height={height}>
+        {children}
+      </WaveformBorder>
     );
   }
   return <>{children}</>;

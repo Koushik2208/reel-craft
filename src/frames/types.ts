@@ -16,7 +16,14 @@ export type FrameId =
   | "arch-portal"
   | "vintage-projector"
   | "sticky-note"
-  | "split-screen";
+  | "split-screen"
+  | "terminal"
+  | "data-dashboard"
+  | "breaking-news"
+  | "phone-notification"
+  | "hologram"
+  | "morphing-shape"
+  | "waveform-border";
 
 export type Frame = { id: FrameId; label: string; description: string };
 
@@ -40,4 +47,11 @@ export const FRAMES: Frame[] = [
   { id: "vintage-projector", label: "Vintage Projector", description: "Dust particles, flicker, and vignette" },
   { id: "sticky-note", label: "Sticky Note", description: "Content on a pinned sticky note" },
   { id: "split-screen", label: "Split Screen", description: "Content split across three vertical panels" },
+  { id: "terminal", label: "Terminal", description: "VS Code-style code editor shell" },
+  { id: "data-dashboard", label: "Data Dashboard", description: "HUD targeting frame with live readouts" },
+  { id: "breaking-news", label: "Breaking News", description: "Live broadcast lower-third frame" },
+  { id: "phone-notification", label: "Phone Notification", description: "Lock screen notification card" },
+  { id: "hologram", label: "Hologram", description: "Sci-fi holographic projection" },
+  { id: "morphing-shape", label: "Morphing Shape", description: "Content window that morphs between shapes" },
+  { id: "waveform-border", label: "Waveform Border", description: "Living waveform border that animates" },
 ];

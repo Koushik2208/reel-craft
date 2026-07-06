@@ -1,18 +1,28 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 
-export type SquareBezelProps = { children: React.ReactNode; width: number; height: number };
+export type SquareBezelProps = {
+  children: React.ReactNode;
+  width: number;
+  height: number;
+  bgColor?: string;
+};
 
 // Square content window on a pure black shell, with a soft inner glow
 // bleeding from the frame edge inward.
-export const SquareBezel: React.FC<SquareBezelProps> = ({ children, width, height }) => {
+export const SquareBezel: React.FC<SquareBezelProps> = ({
+  children,
+  width,
+  height,
+  bgColor = "#000000",
+}) => {
   const contentSize = width * 0.92;
   const contentLeft = (width - contentSize) / 2;
   const contentTop = (height - contentSize) / 2;
   const contentRadius = width * 0.04;
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000000" }}>
+    <AbsoluteFill style={{ backgroundColor: bgColor }}>
       <div
         style={{
           position: "absolute",

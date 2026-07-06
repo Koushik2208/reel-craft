@@ -71,6 +71,7 @@ export const SceneSeries: React.FC<SceneSeriesProps> = ({ scenes, audio, finishe
                   layerMode={scene.layerMode ?? "full"}
                   textColorOverride={scene.textColorOverride ?? null}
                   frameId={scene.frameId ?? "none"}
+                  frameGreenScreen={scene.frameGreenScreen ?? false}
                   overlays={scene.overlays ?? []}
                   motion={scene.motion ?? []}
                   imageEffect={scene.imageEffect ?? "zoom-in"}

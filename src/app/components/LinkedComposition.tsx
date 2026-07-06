@@ -58,7 +58,7 @@ export const LinkedComposition: React.FC<LinkedCompositionProps> = ({ linkedPair
 
   return (
     <>
-      {wrapInFrame(linkedPair.frameId, WIDTH, HEIGHT, content)}
+      {wrapInFrame(linkedPair.frameId, WIDTH, HEIGHT, content, linkedPair.frameGreenScreen)}
       {audio?.src && (
         <Audio
           src={audio.src}
