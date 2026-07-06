@@ -21,6 +21,7 @@ export type ActiveStyle =
       frameId: FrameId;
       overlays: ActiveOverlay[];
       hasBackground: boolean;
+      applyStyleToAllScenes: (() => void) | null;
       setTemplate: (t: TemplateId) => void;
       setVariant: (v: string) => void;
       setLanguage: (l: Language) => void;
@@ -89,6 +90,7 @@ export function useActiveStyle(): ActiveStyle {
       frameId: pair.frameId,
       overlays: pair.overlays,
       hasBackground: pair.background !== null,
+      applyStyleToAllScenes: null,
       setTemplate: (t) =>
         store.updateLinkedPairStyle({ template: t, variant: TEMPLATES[t].defaultVariant }),
       setVariant: (v) => store.updateLinkedPairStyle({ variant: v }),
@@ -142,6 +144,8 @@ export function useActiveStyle(): ActiveStyle {
     frameId: scene.frameId,
     overlays: scene.overlays,
     hasBackground: scene.asset !== null,
+    applyStyleToAllScenes:
+      scenes.length > 1 ? () => store.applyStyleToAllScenes(scene.id) : null,
     setTemplate: store.setTemplate,
     setVariant: store.setVariant,
     setLanguage: store.setLanguage,

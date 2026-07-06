@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { Check, Paintbrush } from "lucide-react";
+import React from "react";
+import { Check } from "lucide-react";
 import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "./EmptyTargetState";
-import { SceneSelector } from "./SceneSelector";
+import { SceneSelector, type ApplyOption } from "./SceneSelector";
 import { OVERLAYS, type OverlayIntensity } from "../../overlays/types";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -17,21 +17,19 @@ const INTENSITY_LEVELS: OverlayIntensity[] = ["low", "medium", "high"];
 export const OverlaysPanel: React.FC = () => {
   const style = useActiveStyle();
 
-  const [applied, setApplied] = useState(false);
-  const handleApplyAll = () => {
-    if (!style.ready || !style.applyOverlaysToAllScenes) return;
-    style.applyOverlaysToAllScenes();
-    setApplied(true);
-    setTimeout(() => setApplied(false), 2000);
-  };
-
   if (!style.ready) {
     return <EmptyTargetState message={style.message} linkTo={style.linkTo} linkLabel={style.linkLabel} />;
   }
 
   return (
     <div className="flex flex-col gap-7">
-      <SceneSelector />
+      <SceneSelector
+        applyOptions={[
+          style.applyOverlaysToAllScenes
+            ? { label: "Overlays to all scenes", action: style.applyOverlaysToAllScenes }
+            : null,
+        ].filter((o): o is ApplyOption => o !== null)}
+      />
 
       {/* ── Active overlays summary ── */}
       {style.overlays.length > 0 && (
@@ -108,31 +106,6 @@ export const OverlaysPanel: React.FC = () => {
           })}
         </div>
       </Section>
-
-      {/* ── One-shot overlay copy (manual mode only) ── */}
-      {style.applyOverlaysToAllScenes && (
-        <div className="space-y-1.5">
-          <button
-            onClick={handleApplyAll}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-          >
-            {applied ? (
-              <>
-                <Check size={14} className="text-accent-purple" />
-                <span className="text-accent-purple">Applied</span>
-              </>
-            ) : (
-              <>
-                <Paintbrush size={14} />
-                Apply overlays to all scenes
-              </>
-            )}
-          </button>
-          <p className="text-center text-[11px] leading-snug text-muted/70">
-            Copies this scene's overlays to every other scene.
-          </p>
-        </div>
-      )}
     </div>
   );
 };

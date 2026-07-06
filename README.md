@@ -110,7 +110,8 @@ They're purely cosmetic and stack independently of template/overlay choices.
 
 You can also export a frame's shell alone as a transparent PNG (Frames page → "Frame Shell PNG")
 — useful if you want the device chrome as a compositing element in another editor without
-re-exporting the whole video.
+re-exporting the whole video. In Manual Mode, an "Apply to all" shortcut copies the active
+scene's frame to every other scene.
 
 ### Overlays
 
@@ -137,12 +138,15 @@ Typical combos:
 - **Film look**: Halation + Film Dust + Noise (low/medium)
 - **Glitch/HUD**: Grid + Glow Bloom
 
+In Manual Mode, an "Apply to all" shortcut copies the active scene's overlay stack (including
+intensities) to every other scene.
+
 ### Motion Graphics
 
 Stackable animated overlays for adding information/UI-style elements on top of a scene —
-distinct from the textural Overlays above. Five are available, each with its own inline config,
+distinct from the textural Overlays above. Six are available, each with its own inline config,
 and they're combinable. They render in a fixed stack order: progress-bar, ticker, step-badge,
-number-counter, countdown.
+number-counter, countdown, code-block.
 
 | Motion Graphic | Description | Config |
 |---|---|---|
@@ -151,8 +155,9 @@ number-counter, countdown.
 | **Countdown** | Big centered numbers that spring in one at a time, then disappear at 0 | Start from (3 / 5 / 10) |
 | **Ticker** | Scrolling text bar, semi-transparent background | Text, direction (left / right), position (top / bottom) |
 | **Step Badge** | Small pill reading "Step X / Y" with a gradient border | Step number, total steps, corner position |
+| **Code Block** | Syntax-highlighted floating code snippet, paginated if it runs long | Code (own editor modal), language (Python / SQL / R / Bash / JS), position (top / center / bottom), lines per page |
 
-Available in both Manual Mode (per-scene, with "Apply motion to all scenes") and Linked Mode
+Available in both Manual Mode (per-scene, with an "Apply to all" shortcut) and Linked Mode
 (project-level). Driven purely by frame/spring interpolation (no CSS animation), so it renders
 identically in preview and in the exported MP4.
 
@@ -160,8 +165,8 @@ identically in preview and in the exported MP4.
 
 Manual Mode only. Each scene carries a transition that plays between it and the next scene, with
 a short / medium / long duration (10 / 20 / 30 frames). Eight are available: None (hard cut),
-Crossfade, Slide (left / right / up / down), Wipe, and Clapperboard (cinema clap reveal). Set
-per-scene, with an "Apply transition to all scenes" shortcut.
+Crossfade, Slide (left / right / up / down), Wipe, and Clapperboard (cinema clap reveal, with a
+pre-generated clap-board asset). Set per-scene, with an "Apply to all" shortcut.
 
 ### Image Effects
 
@@ -228,7 +233,7 @@ Any of the twelve can be further tuned without leaving the style behind:
 - **Size** — Auto / S / M / L / XL.
 - **Position** — Auto / Top / Center / Bottom.
 
-Set per-scene in Manual Mode (with an "Apply style to all scenes" shortcut, like Image Effect),
+Set per-scene in Manual Mode (with an "Apply to all" shortcut, like Image Effect),
 project-level in Linked Mode.
 
 ### Text Color Override
@@ -236,6 +241,28 @@ project-level in Linked Mode.
 8 fixed swatches for manually forcing the text color, for when auto-contrast (which picks white
 or dark text based on background brightness) doesn't match your creative intent. Resettable back
 to auto per scene.
+
+### Scene Navigation & Apply to All
+
+Every scene-scoped tool page (Content, Style, Frames, Overlays, Motion) shows a shared scene
+switcher at the top (Manual Mode, 2+ scenes only) — prev/next arrows plus a row of scene pills, so
+you can jump scenes without leaving the current tool. Directly below it, an "Apply to all"
+dropdown lists that page's copy-to-all-scenes shortcuts (e.g. Style offers "Everything", "Text
+style", and "Image effect" separately; Frames, Overlays, Motion, and Transitions each offer their
+own single shortcut). Picking one applies it immediately and shows a brief "Applied ✓"
+confirmation.
+
+### Preview Controls
+
+The live preview (right panel on desktop, bottom sheet on mobile) has two controls that work from
+any page, not just the editor:
+
+- **Scene / Full Video toggle** — switch what the preview plays without navigating back to the
+  main editor. Scene-scoped pages default to previewing just the active scene; flip to "Full
+  Video" to see it in context, then flip back. Manual Mode only (linked mode always previews the
+  one continuous video).
+- **Safe area** — overlays shaded top/bottom zones so you can keep text clear of areas platforms
+  tend to cover with their own UI (captions, usernames, action buttons).
 
 ### Audio
 
@@ -257,19 +284,38 @@ SRT is the only transcript input available today.
 
 ### Project Title
 
-Sets the downloaded filename for full exports, per-scene exports, and the frame-shell PNG
-export. Falls back to a timestamped default name if left blank or it sanitizes to nothing.
+Sets the downloaded filename for full exports, per-scene exports, the frame-shell PNG export, and
+the saved project JSON. Falls back to a timestamped default name if left blank or it sanitizes to
+nothing.
 
 ### Per-scene Export
 
 Manual Mode only. Each scene in the scene list can be exported individually as its own MP4,
 carrying the same cinematic finishes as the full render (skipped in Greenscreen mode).
 
-### Prompt Templates Panel
+### Project Save / Load
 
-A separate `/prompts` page with copyable prompt templates (Motivational, Personal, Political,
-Cinematic, Nature, Abstract, Urban, Cultural) — reference text for briefing an AI image/video
-generator or TTS tool before bringing the result into Reel Craft. Not a generation feature itself.
+Manual Mode only, from the Scenes page header (next to the project title). **Save Project**
+downloads the full project — scenes, styles, frames, overlays, motion, transitions — as a
+`.reelcraft.json` file. **Open Project** re-imports one, replacing the current project. Object
+URLs (audio, image/video backgrounds) can't survive the round trip and are stripped on save, same
+as a page reload — you'll be prompted to re-attach those files, but every style/timing choice is
+preserved.
+
+### AI Project Generation
+
+A separate `/prompts` page ("Generate with AI") for building a whole project from a text
+description via an external LLM:
+
+- **Copy System Prompt** — copies a system prompt (with the full Reel Craft project JSON schema:
+  templates, variants, frames, overlays, motion configs, transitions, caption positions, timing
+  rules) to paste into Claude, ChatGPT, or similar, followed by your own script or video idea.
+- **Import Generated JSON** — loads the JSON the LLM returns straight into the project, the same
+  way Open Project does.
+- **Valid Values Reference** — a collapsible cheat sheet of every valid template/variant/frame/
+  overlay/transition id, handy for hand-editing a generated JSON or writing your own prompt.
+- **Example Prompts** — four ready-to-copy example briefs (Data Science Tutorial, Opinion/Hot
+  Take, Motivational Quote Reel, News Breakdown) demonstrating the expected level of detail.
 
 ## Recommended Workflows
 
@@ -330,5 +376,5 @@ Handing off to a real NLE for finishing is the intended workflow, not a limitati
 
 - Social UI frames (TikTok/Instagram HUD overlays)
 - Whisper API integration for word-level captions without manual SRT authoring
-- Project save/load as JSON (currently persisted only to browser storage)
+- Project save/load for Linked Mode (JSON round-trip currently covers Manual Mode only)
 - Additional aspect ratios beyond 9:16

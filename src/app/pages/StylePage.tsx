@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Check,
   X,
@@ -12,13 +12,12 @@ import {
   Move,
   Zap,
   Wind,
-  Paintbrush,
   type LucideIcon,
 } from "lucide-react";
 import { useStore } from "../store";
 import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "../components/EmptyTargetState";
-import { SceneSelector } from "../components/SceneSelector";
+import { SceneSelector, type ApplyOption } from "../components/SceneSelector";
 import { TEMPLATE_LIST, TEMPLATES } from "../../templates/registry";
 import type { LayerMode, TemplateId } from "../../templates/schema";
 import { LANGUAGES } from "../../templates/shared/language";
@@ -134,22 +133,6 @@ export const StylePage: React.FC = () => {
   const { finishes, setFinish } = useStore();
   const style = useActiveStyle();
 
-  const [effectApplied, setEffectApplied] = useState(false);
-  const handleApplyEffect = () => {
-    if (!style.ready || !style.applyImageEffectToAllScenes) return;
-    style.applyImageEffectToAllScenes();
-    setEffectApplied(true);
-    setTimeout(() => setEffectApplied(false), 2000);
-  };
-
-  const [textStyleApplied, setTextStyleApplied] = useState(false);
-  const handleApplyTextStyle = () => {
-    if (!style.ready || !style.applyTextStyleToAllScenes) return;
-    style.applyTextStyleToAllScenes();
-    setTextStyleApplied(true);
-    setTimeout(() => setTextStyleApplied(false), 2000);
-  };
-
   if (!style.ready) {
     return <EmptyTargetState message={style.message} linkTo={style.linkTo} linkLabel={style.linkLabel} />;
   }
@@ -165,7 +148,19 @@ export const StylePage: React.FC = () => {
   return (
     <div className="flex flex-col gap-7">
       <h2 className="text-sm font-semibold text-zinc-100">Style</h2>
-      <SceneSelector />
+      <SceneSelector
+        applyOptions={[
+          style.applyStyleToAllScenes
+            ? { label: "Everything to all scenes", action: style.applyStyleToAllScenes }
+            : null,
+          style.applyTextStyleToAllScenes
+            ? { label: "Text style to all scenes", action: style.applyTextStyleToAllScenes }
+            : null,
+          style.applyImageEffectToAllScenes
+            ? { label: "Image effect to all scenes", action: style.applyImageEffectToAllScenes }
+            : null,
+        ].filter((o): o is ApplyOption => o !== null)}
+      />
 
       {/* ── Template ── */}
       <Section title="Template">
@@ -328,24 +323,6 @@ export const StylePage: React.FC = () => {
             );
           })}
         </div>
-        {style.applyImageEffectToAllScenes && (
-          <button
-            onClick={handleApplyEffect}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-          >
-            {effectApplied ? (
-              <>
-                <Check size={14} className="text-accent-purple" />
-                <span className="text-accent-purple">Applied</span>
-              </>
-            ) : (
-              <>
-                <Paintbrush size={14} />
-                Apply effect to all scenes
-              </>
-            )}
-          </button>
-        )}
       </Section>
 
       {/* ── Text ── */}
@@ -434,25 +411,6 @@ export const StylePage: React.FC = () => {
             onChange={style.setCaptionPosition}
           />
         </div>
-
-        {style.applyTextStyleToAllScenes && (
-          <button
-            onClick={handleApplyTextStyle}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-          >
-            {textStyleApplied ? (
-              <>
-                <Check size={14} className="text-accent-purple" />
-                <span className="text-accent-purple">Applied</span>
-              </>
-            ) : (
-              <>
-                <Paintbrush size={14} />
-                Apply text style to all scenes
-              </>
-            )}
-          </button>
-        )}
       </Section>
 
       {/* ── Cinematic finishes (project-wide) ── */}

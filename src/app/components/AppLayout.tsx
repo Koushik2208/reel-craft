@@ -24,9 +24,12 @@ export const AppLayout: React.FC = () => {
   const handleRef = useRef<RenderHandle | null>(null);
   const location = useLocation();
   const [sceneFocusPreview, setSceneFocusPreview] = useState(false);
+  const [previewOverride, setPreviewOverride] = useState<"scene" | "full" | null>(null);
   const isEditorPath = location.pathname === "/editor";
   const previewMode: PreviewMode =
-    SCENE_SCOPED_PATHS.includes(location.pathname) || (isEditorPath && sceneFocusPreview)
+    previewOverride !== null
+      ? previewOverride
+      : SCENE_SCOPED_PATHS.includes(location.pathname) || (isEditorPath && sceneFocusPreview)
       ? "scene"
       : "full";
 
@@ -34,6 +37,12 @@ export const AppLayout: React.FC = () => {
   // transient choice made by clicking a scene card, and resets on navigation away.
   useEffect(() => {
     if (!isEditorPath) setSceneFocusPreview(false);
+  }, [isEditorPath]);
+
+  // The manual toggle override is scoped to the panel it was set on; returning
+  // to /editor should restore the normal full/scene-focus behavior.
+  useEffect(() => {
+    if (isEditorPath) setPreviewOverride(null);
   }, [isEditorPath]);
 
   // A scene is exportable if it has text OR any visual content that can stand
@@ -208,7 +217,11 @@ export const AppLayout: React.FC = () => {
           {/* Preview */}
           <section className="flex min-h-0 h-full items-center justify-center overflow-hidden bg-[radial-gradient(120%_120%_at_50%_0%,#1a1a26_0%,#0D0D12_60%)] px-4 py-6 lg:border-r lg:border-rim lg:px-6 lg:py-10">
             <PreviewModeProvider mode={previewMode}>
-              <PreviewStage showSafeArea={safeArea} />
+              <PreviewStage
+                showSafeArea={safeArea}
+                previewOverride={previewOverride}
+                onPreviewOverride={setPreviewOverride}
+              />
             </PreviewModeProvider>
           </section>
 

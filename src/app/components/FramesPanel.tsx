@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Check, Download, Loader2, Paintbrush } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { useStore } from "../store";
 import { useActiveStyle } from "../hooks/useActiveStyle";
 import { EmptyTargetState } from "./EmptyTargetState";
-import { SceneSelector } from "./SceneSelector";
+import { SceneSelector, type ApplyOption } from "./SceneSelector";
 import { FRAMES, type FrameId } from "../../frames/types";
 import { exportFrameAsPng } from "../../frames/exportFramePng";
 import { titledFilename } from "../render";
@@ -46,14 +46,6 @@ export const FramesPanel: React.FC = () => {
   const { projectTitle } = useStore();
   const style = useActiveStyle();
 
-  const [applied, setApplied] = useState(false);
-  const handleApplyAll = () => {
-    if (!style.ready || !style.applyFrameToAllScenes) return;
-    style.applyFrameToAllScenes();
-    setApplied(true);
-    setTimeout(() => setApplied(false), 2000);
-  };
-
   const [exporting, setExporting] = useState(false);
   const handleExportPng = async (frameId: FrameId) => {
     setExporting(true);
@@ -77,7 +69,13 @@ export const FramesPanel: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-7">
-      <SceneSelector />
+      <SceneSelector
+        applyOptions={[
+          style.applyFrameToAllScenes
+            ? { label: "Frame to all scenes", action: style.applyFrameToAllScenes }
+            : null,
+        ].filter((o): o is ApplyOption => o !== null)}
+      />
 
       {/* ── Frame picker ── */}
       <Section title="Frame">
@@ -104,31 +102,6 @@ export const FramesPanel: React.FC = () => {
           })}
         </div>
       </Section>
-
-      {/* ── One-shot frame copy (manual mode only) ── */}
-      {style.applyFrameToAllScenes && (
-        <div className="space-y-1.5">
-          <button
-            onClick={handleApplyAll}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-          >
-            {applied ? (
-              <>
-                <Check size={14} className="text-accent-purple" />
-                <span className="text-accent-purple">Applied</span>
-              </>
-            ) : (
-              <>
-                <Paintbrush size={14} />
-                Apply frame to all scenes
-              </>
-            )}
-          </button>
-          <p className="text-center text-[11px] leading-snug text-muted/70">
-            Copies this scene's frame to every other scene.
-          </p>
-        </div>
-      )}
 
       {/* ── Green screen PNG export ── */}
       <div className="border-t border-rim pt-7">

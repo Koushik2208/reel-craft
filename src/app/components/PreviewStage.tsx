@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Player } from "@remotion/player";
 import { useStore, sceneDurationInFrames, linkedDurationInFrames } from "../store";
-import { usePreviewMode } from "../PreviewContext";
+import { usePreviewMode, type PreviewMode } from "../PreviewContext";
 import { SceneSeries, totalDurationInFrames } from "./SceneSeries";
 import { VideoComposition } from "./VideoComposition";
 import { LinkedComposition } from "./LinkedComposition";
@@ -68,7 +68,39 @@ const LinkedPreview: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea }) =>
   );
 };
 
-export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea }) => {
+const PreviewModeToggle: React.FC<{
+  previewMode: PreviewMode;
+  onPreviewOverride: (mode: "scene" | "full" | null) => void;
+}> = ({ previewMode, onPreviewOverride }) => (
+  <div className="mt-3 flex justify-center gap-1.5">
+    <button
+      onClick={() => onPreviewOverride("scene")}
+      className={`rounded-lg border px-3 py-1 text-[11px] transition ${
+        previewMode === "scene"
+          ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+          : "border-rim text-muted hover:text-zinc-200"
+      }`}
+    >
+      Scene
+    </button>
+    <button
+      onClick={() => onPreviewOverride("full")}
+      className={`rounded-lg border px-3 py-1 text-[11px] transition ${
+        previewMode === "full"
+          ? "border-accent-purple/60 bg-accent-purple/10 text-zinc-100"
+          : "border-rim text-muted hover:text-zinc-200"
+      }`}
+    >
+      Full Video
+    </button>
+  </div>
+);
+
+export const PreviewStage: React.FC<{
+  showSafeArea: boolean;
+  previewOverride?: "scene" | "full" | null;
+  onPreviewOverride?: (mode: "scene" | "full" | null) => void;
+}> = ({ showSafeArea, onPreviewOverride }) => {
   const { scenes, audio, finishes, activeSceneId, projectMode } = useStore();
   const previewMode = usePreviewMode();
   const isSceneMode = previewMode === "scene";
@@ -145,6 +177,9 @@ export const PreviewStage: React.FC<{ showSafeArea: boolean }> = ({ showSafeArea
         )}
         {showSafeArea && <SafeAreaOverlay />}
       </div>
+      {onPreviewOverride && (
+        <PreviewModeToggle previewMode={previewMode} onPreviewOverride={onPreviewOverride} />
+      )}
       <p className="mt-3 text-center text-xs text-muted">
         {isSceneMode
           ? `Scene ${activeIndex + 1} of ${scenes.length} · ${(durationInFrames / FPS).toFixed(1)}s · 1080×1920 · 9:16`

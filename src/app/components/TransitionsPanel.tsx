@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { Check, Shuffle } from "lucide-react";
+import React from "react";
+import { Check } from "lucide-react";
 import { useStore } from "../store";
 import { EmptyTargetState } from "./EmptyTargetState";
-import { SceneSelector } from "./SceneSelector";
+import { SceneSelector, type ApplyOption } from "./SceneSelector";
 import { DEFAULT_TRANSITION, TRANSITIONS, type TransitionDuration } from "../../transitions/types";
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
@@ -17,13 +17,6 @@ const DURATIONS: TransitionDuration[] = ["short", "medium", "long"];
 export const TransitionsPanel: React.FC = () => {
   const { projectMode, scenes, activeSceneId, setTransition, applyTransitionToAllScenes } = useStore();
 
-  const [applied, setApplied] = useState(false);
-  const handleApplyAll = (sourceId: string) => {
-    applyTransitionToAllScenes(sourceId);
-    setApplied(true);
-    setTimeout(() => setApplied(false), 2000);
-  };
-
   if (projectMode === "linked") {
     return <EmptyTargetState message="Transitions are only available in manual mode" />;
   }
@@ -37,7 +30,16 @@ export const TransitionsPanel: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-7">
-      <SceneSelector />
+      <SceneSelector
+        applyOptions={[
+          scenes.length > 1
+            ? {
+                label: "Transition to all scenes",
+                action: () => applyTransitionToAllScenes(activeSceneId),
+              }
+            : null,
+        ].filter((o): o is ApplyOption => o !== null)}
+      />
 
       {/* ── Transition picker ── */}
       <Section title="Transition">
@@ -87,31 +89,6 @@ export const TransitionsPanel: React.FC = () => {
             })}
           </div>
         </Section>
-      )}
-
-      {/* ── One-shot transition copy ── */}
-      {scenes.length > 1 && (
-        <div className="space-y-1.5">
-          <button
-            onClick={() => handleApplyAll(scene.id)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-rim bg-surface px-3.5 py-2.5 text-[13px] text-muted transition hover:border-accent-purple hover:text-zinc-200"
-          >
-            {applied ? (
-              <>
-                <Check size={14} className="text-accent-purple" />
-                <span className="text-accent-purple">Applied</span>
-              </>
-            ) : (
-              <>
-                <Shuffle size={14} />
-                Apply transition to all scenes
-              </>
-            )}
-          </button>
-          <p className="text-center text-[11px] leading-snug text-muted/70">
-            Copies this scene's transition to every other scene.
-          </p>
-        </div>
       )}
     </div>
   );
