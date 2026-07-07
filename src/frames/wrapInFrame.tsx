@@ -24,6 +24,8 @@ import { PhoneNotification } from "./components/PhoneNotification";
 import { HologramFrame } from "./components/HologramFrame";
 import { MorphingShape } from "./components/MorphingShape";
 import { WaveformBorder } from "./components/WaveformBorder";
+import { IPhoneDepth } from "./components/IPhoneDepth";
+import { FrostedGlass } from "./components/FrostedGlass";
 
 export function wrapInFrame(
   frameId: FrameId,
@@ -198,6 +200,20 @@ export function wrapInFrame(
       <WaveformBorder width={width} height={height}>
         {children}
       </WaveformBorder>
+    );
+  }
+  if (frameId === "iphone-depth") {
+    return (
+      <IPhoneDepth width={width} height={height}>
+        {children}
+      </IPhoneDepth>
+    );
+  }
+  if (frameId === "frosted-glass") {
+    return (
+      <FrostedGlass width={width} height={height}>
+        {children}
+      </FrostedGlass>
     );
   }
   return <>{children}</>;

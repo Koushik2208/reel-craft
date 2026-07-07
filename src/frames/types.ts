@@ -23,7 +23,9 @@ export type FrameId =
   | "phone-notification"
   | "hologram"
   | "morphing-shape"
-  | "waveform-border";
+  | "waveform-border"
+  | "iphone-depth"
+  | "frosted-glass";
 
 export type Frame = { id: FrameId; label: string; description: string };
 
@@ -54,4 +56,6 @@ export const FRAMES: Frame[] = [
   { id: "hologram", label: "Hologram", description: "Sci-fi holographic projection" },
   { id: "morphing-shape", label: "Morphing Shape", description: "Content window that morphs between shapes" },
   { id: "waveform-border", label: "Waveform Border", description: "Living waveform border that animates" },
+  { id: "iphone-depth", label: "iPhone Depth", description: "Realistic iPhone with blurred depth background" },
+  { id: "frosted-glass", label: "Frosted Glass", description: "iOS frosted glass panel with blurred background" },
 ];
